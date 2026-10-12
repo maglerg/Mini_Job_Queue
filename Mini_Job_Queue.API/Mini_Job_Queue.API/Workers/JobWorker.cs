@@ -4,7 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Mini_Job_Queue.API.Context;
+using Mini_Job_Queue.API.Models;
+using Mini_Job_Queue.API.Models.Enums;
 using Mini_Job_Queue.API.Queue;
+using Mini_Job_Queue.API.Services;
 
 namespace Mini_Job_Queue.API.Workers;
 
@@ -32,53 +35,102 @@ public class JobWorker : BackgroundService
         await foreach (
             Guid jobId in _jobQueue.ReadAllAsync(stoppingToken))
         {
-            try
+            await ProcessJobAsync(jobId, stoppingToken);
+        }
+    }
+
+    private async Task ProcessJobAsync(
+        Guid jobId,
+        CancellationToken stoppingToken)
+    {
+        await using var scope = _scopeFactory.CreateAsyncScope();
+
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<AppDbContext>();
+
+        var urlCheckService = scope.ServiceProvider
+            .GetRequiredService<UrlCheckService>();
+
+        Job? job = null;
+
+        try
+        {
+            job = await dbContext.Jobs
+                .Include(j => j.Results)
+                .FirstOrDefaultAsync(
+                    j => j.Id == jobId,
+                    stoppingToken);
+
+            if (job is null)
             {
-                await using var scope =
-                    _scopeFactory.CreateAsyncScope();
+                _logger.LogWarning(
+                    "Задача {JobId} не найдена",
+                    jobId);
 
-                var dbContext = scope.ServiceProvider
-                    .GetRequiredService<AppDbContext>();
+                return;
+            }
 
-                var job = await dbContext.Jobs
-                    .Include(j => j.Results)
-                    .FirstOrDefaultAsync(
-                        j => j.Id == jobId,
-                        stoppingToken);
+            job.Status = JobStatus.Running;
+            job.StartedAt = DateTime.UtcNow;
 
-                if (job is null)
-                {
-                    _logger.LogWarning(
-                        "Задача {JobId} не найдена",
-                        jobId);
+            await dbContext.SaveChangesAsync(stoppingToken);
 
-                    continue;
-                }
+            foreach (var result in job.Results)
+            {
+                var outcome = await urlCheckService.CheckUrlAsync(
+                    result.Url,
+                    stoppingToken);
+
+                result.HttpStatusCode = outcome.HttpStatusCode;
+                result.ResponseTimeMs = outcome.ResponseTimeMs;
+                result.Error = outcome.Error;
 
                 _logger.LogInformation(
-                    "Задача {JobId} получена. Статус: {Status}. URL: {Count}",
+                    "Job {JobId}: {Url}, HTTP {StatusCode}, {Time} ms",
                     job.Id,
-                    job.Status,
-                    job.Results.Count);
+                    result.Url,
+                    result.HttpStatusCode,
+                    result.ResponseTimeMs);
+            }
 
-                foreach (var result in job.Results)
+            job.Status = JobStatus.Completed;
+            job.CompletedAt = DateTime.UtcNow;
+
+            await dbContext.SaveChangesAsync(stoppingToken);
+
+            _logger.LogInformation(
+                "Задача {JobId} завершена",
+                job.Id);
+        }
+        catch (OperationCanceledException)
+            when (stoppingToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Ошибка обработки задачи {JobId}",
+                jobId);
+
+            if (job is not null)
+            {
+                job.Status = JobStatus.Failed;
+                job.CompletedAt = DateTime.UtcNow;
+
+                try
                 {
-                    _logger.LogInformation(
-                        "URL для проверки: {Url}",
-                        result.Url);
+                    await dbContext.SaveChangesAsync(
+                        CancellationToken.None);
                 }
-            }
-            catch (OperationCanceledException)
-                when (stoppingToken.IsCancellationRequested)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "Ошибка обработки задачи {JobId}",
-                    jobId);
+                catch (Exception saveException)
+                {
+                    _logger.LogError(
+                        saveException,
+                        "Не удалось сохранить статус Failed для {JobId}",
+                        jobId);
+                }
             }
         }
     }

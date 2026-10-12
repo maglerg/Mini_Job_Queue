@@ -1,24 +1,20 @@
 ﻿
 using System.Diagnostics;
 using System.Net.Http;
-using Microsoft.Extensions.Logging;
+using Mini_Job_Queue.API.Models;
 
 namespace Mini_Job_Queue.API.Services;
 
 public class UrlCheckService
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ILogger<UrlCheckService> _logger;
 
-    public UrlCheckService(
-        IHttpClientFactory httpClientFactory,
-        ILogger<UrlCheckService> logger)
+    public UrlCheckService(IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
-        _logger = logger;
     }
 
-    public async Task CheckUrlAsync(
+    public async Task<UrlCheckOutcome> CheckUrlAsync(
         string url,
         CancellationToken cancellationToken = default)
     {
@@ -33,11 +29,12 @@ public class UrlCheckService
 
             stopwatch.Stop();
 
-            _logger.LogInformation(
-                "URL: {Url}; Status: {StatusCode}; Time: {ElapsedMs} ms",
-                url,
-                (int)response.StatusCode,
-                stopwatch.ElapsedMilliseconds);
+            return new UrlCheckOutcome
+            {
+                HttpStatusCode = (int)response.StatusCode,
+                ResponseTimeMs = stopwatch.ElapsedMilliseconds,
+                Error = null
+            };
         }
         catch (OperationCanceledException)
             when (cancellationToken.IsCancellationRequested)
@@ -49,11 +46,12 @@ public class UrlCheckService
         {
             stopwatch.Stop();
 
-            _logger.LogWarning(
-                "URL: {Url}; Error: {Error}; Time: {ElapsedMs} ms",
-                url,
-                ex.Message,
-                stopwatch.ElapsedMilliseconds);
+            return new UrlCheckOutcome
+            {
+                HttpStatusCode = null,
+                ResponseTimeMs = stopwatch.ElapsedMilliseconds,
+                Error = ex.Message
+            };
         }
     }
 }
