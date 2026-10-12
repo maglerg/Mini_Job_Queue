@@ -1,3 +1,10 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="problems.txt" />
+  </Folder>
   <Project Path="Mini_Job_Queue.API/Mini_Job_Queue.API.csproj" />
+  <Project Path="Mini_Job_Queue.client/mini_job_queue.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
 </Solution>

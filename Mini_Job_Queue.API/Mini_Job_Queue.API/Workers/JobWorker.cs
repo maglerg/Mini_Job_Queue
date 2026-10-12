@@ -75,23 +75,31 @@ public class JobWorker : BackgroundService
 
             await dbContext.SaveChangesAsync(stoppingToken);
 
+
             foreach (var result in job.Results)
             {
+                _logger.LogInformation(
+    "Начинаю проверку URL: {Url}",
+    result.Url);
+
                 var outcome = await urlCheckService.CheckUrlAsync(
                     result.Url,
                     stoppingToken);
+
+                _logger.LogInformation(
+                    "Результат проверки URL: {Url}, HTTP: {StatusCode}, Время: {Time} мс, Ошибка: {Error}",
+                    result.Url,
+                    outcome.HttpStatusCode,
+                    outcome.ResponseTimeMs,
+                    outcome.Error);
 
                 result.HttpStatusCode = outcome.HttpStatusCode;
                 result.ResponseTimeMs = outcome.ResponseTimeMs;
                 result.Error = outcome.Error;
 
-                _logger.LogInformation(
-                    "Job {JobId}: {Url}, HTTP {StatusCode}, {Time} ms",
-                    job.Id,
-                    result.Url,
-                    result.HttpStatusCode,
-                    result.ResponseTimeMs);
+                await dbContext.SaveChangesAsync(stoppingToken);
             }
+
 
             job.Status = JobStatus.Completed;
             job.CompletedAt = DateTime.UtcNow;

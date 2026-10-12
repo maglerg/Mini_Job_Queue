@@ -1,0 +1,74 @@
+/* Общая страница */
+.app {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 24px;
+    font-family: Arial, sans-serif;
+    color: #222;
+}
+
+    .app h1 {
+        margin-bottom: 8px;
+    }
+
+    .app > p {
+        color: #555;
+        line-height: 1.5;
+    }
+
+/* Информация о задаче */
+.job-info {
+    margin-top: 32px;
+    padding: 24px;
+    background: #f7f8fa;
+    border: 1px solid #e0e3e8;
+    border-radius: 10px;
+    overflow-wrap: anywhere;
+}
+
+    .job-info h2 {
+        margin-top: 0;
+    }
+
+    .job-info h3 {
+        margin-top: 24px;
+    }
+
+    /* Отдельный результат */
+    .job-info article {
+        margin-top: 12px;
+        padding: 16px;
+        background: #fff;
+        border: 1px solid #e0e3e8;
+        border-radius: 8px;
+    }
+
+        .job-info article p {
+            margin: 6px 0;
+        }
+
+/* Ошибки */
+.error-message {
+    color: #b42318;
+    overflow-wrap: anywhere;
+}
+
+/* Мобильные устройства */
+@media (max-width: 600px) {
+    .app {
+        margin: 16px auto;
+        padding: 16px;
+    }
+
+    .job-info {
+        padding: 16px;
+    }
+
+        .job-info article {
+            padding: 12px;
+        }
+
+    .job-form button {
+        align-self: stretch;
+    }
+}
