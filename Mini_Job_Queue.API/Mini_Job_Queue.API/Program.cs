@@ -29,7 +29,18 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     ));
 
 builder.Services.AddSingleton<IJobQueue, JobQueue>();
-builder.Services.AddHostedService<JobWorker>();
+
+const int workerCount = 4;
+
+for (int i = 0; i < workerCount; i++)
+{
+    builder.Services.AddSingleton<IHostedService>(serviceProvider =>
+        new JobWorker(
+            serviceProvider.GetRequiredService<IJobQueue>(),
+            serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+            serviceProvider.GetRequiredService<ILogger<JobWorker>>()
+        ));
+}
 
 builder.Services.AddControllers();
 

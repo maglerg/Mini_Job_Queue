@@ -69,7 +69,11 @@ public class JobWorker : BackgroundService
 
                 return;
             }
-
+            _logger.LogInformation(
+    "Начало обработки задачи {JobId} в {Time}",
+    jobId,
+    DateTime.UtcNow
+);
             job.Status = JobStatus.Running;
             job.StartedAt = DateTime.UtcNow;
 
@@ -99,7 +103,11 @@ public class JobWorker : BackgroundService
 
                 await dbContext.SaveChangesAsync(stoppingToken);
             }
-
+            _logger.LogInformation(
+    "Завершение обработки задачи {JobId} в {Time}",
+    jobId,
+    DateTime.UtcNow
+);
 
             job.Status = JobStatus.Completed;
             job.CompletedAt = DateTime.UtcNow;

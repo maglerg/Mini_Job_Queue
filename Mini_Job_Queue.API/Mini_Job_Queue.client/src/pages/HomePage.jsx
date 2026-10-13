@@ -89,7 +89,12 @@ function HomePage() {
                     <h2>Задача</h2>
                     <p>ID: {jobId}</p>
                     <p>Статус: {jobStatus}</p>
-
+                    <p>
+                        <strong>Время выполнения:</strong>{' '}
+                        {job.executionTimeMs != null
+                            ? `${(job.executionTimeMs / 1000).toFixed(2)} сек.`
+                            : 'Выполняется...'}
+                    </p>
                     {jobStatus !== 'Completed' &&
                         jobStatus !== 'Failed' && (
                             <p>Проверка выполняется...</p>

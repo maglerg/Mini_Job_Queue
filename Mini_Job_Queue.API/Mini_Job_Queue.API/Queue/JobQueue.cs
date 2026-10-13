@@ -11,7 +11,7 @@ namespace Mini_Job_Queue.API.Queue
             var options = new BoundedChannelOptions(100)
             {
                 FullMode = BoundedChannelFullMode.Wait,
-                SingleReader = true,
+                SingleReader = false,
                 SingleWriter = false
             };
 

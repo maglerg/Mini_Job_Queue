@@ -70,6 +70,11 @@ namespace Mini_Job_Queue.API.Controllers
                 CreatedAt = job.CreatedAt,
                 StartedAt = job.StartedAt,
                 CompletedAt = job.CompletedAt,
+                ExecutionTimeMs =
+    job.StartedAt.HasValue && job.CompletedAt.HasValue
+        ? (long)(job.CompletedAt.Value - job.StartedAt.Value)
+            .TotalMilliseconds
+        : null,
                 Results = job.Results.Select(result =>
                     new UrlCheckResultResponse
                     {

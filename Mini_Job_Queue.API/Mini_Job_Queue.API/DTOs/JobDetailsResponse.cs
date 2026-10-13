@@ -12,6 +12,7 @@ public class JobDetailsResponse
     public DateTime? StartedAt { get; set; }
 
     public DateTime? CompletedAt { get; set; }
+    public long? ExecutionTimeMs { get; set; }
 
     public List<UrlCheckResultResponse> Results { get; set; } = [];
 }
