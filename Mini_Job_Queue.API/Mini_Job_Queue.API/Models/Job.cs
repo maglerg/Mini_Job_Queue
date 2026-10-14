@@ -4,6 +4,7 @@ namespace Mini_Job_Queue.API.Models
     public class Job
     {
         public Guid Id { get; set; } = Guid.NewGuid();
+        public JobType Type { get; set; } = JobType.UrlCheck;
 
         public JobStatus Status { get; set; } = JobStatus.Queued;
 
@@ -14,5 +15,9 @@ namespace Mini_Job_Queue.API.Models
         public DateTime? CompletedAt { get; set; }
 
         public List<UrlCheckResult> Results { get; set; } = new();
+
+        public LogAnalysisInput? LogAnalysisInput { get; set; }
+
+        public LogAnalysisResult? LogAnalysisResult { get; set; }
     }
 }

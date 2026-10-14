@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Mini_Job_Queue.API.Context;
 using Mini_Job_Queue.API.Queue;
 using Mini_Job_Queue.API.Services;
+using Mini_Job_Queue.API.Services.LogAnalysis;
 using Mini_Job_Queue.API.Workers;
 using Serilog;
 
@@ -47,6 +48,9 @@ builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<UrlCheckService>();
 builder.Services.AddScoped<JobsService>();
+builder.Services.AddSingleton<LinuxLogParser>();
+builder.Services.AddSingleton<LinuxLogClassifier>();
+builder.Services.AddSingleton<LogAnalysisService>();
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();

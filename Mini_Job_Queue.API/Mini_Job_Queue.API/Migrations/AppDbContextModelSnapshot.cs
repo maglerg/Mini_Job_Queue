@@ -40,9 +40,57 @@ namespace Mini_Job_Queue.API.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.ToTable("Jobs");
+                });
+
+            modelBuilder.Entity("Mini_Job_Queue.API.Models.LogAnalysisInput", b =>
+                {
+                    b.Property<Guid>("JobId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SourceText")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("JobId");
+
+                    b.ToTable("LogAnalysisInputs");
+                });
+
+            modelBuilder.Entity("Mini_Job_Queue.API.Models.LogAnalysisResult", b =>
+                {
+                    b.Property<Guid>("JobId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CategoryCountsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("FailedAuthenticationByHostJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("InvalidLines")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ParsedLines")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TopMessagesJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("TotalLines")
+                        .HasColumnType("integer");
+
+                    b.HasKey("JobId");
+
+                    b.ToTable("LogAnalysisResults");
                 });
 
             modelBuilder.Entity("Mini_Job_Queue.API.Models.UrlCheckResult", b =>
@@ -74,6 +122,28 @@ namespace Mini_Job_Queue.API.Migrations
                     b.ToTable("UrlCheckResults");
                 });
 
+            modelBuilder.Entity("Mini_Job_Queue.API.Models.LogAnalysisInput", b =>
+                {
+                    b.HasOne("Mini_Job_Queue.API.Models.Job", "Job")
+                        .WithOne("LogAnalysisInput")
+                        .HasForeignKey("Mini_Job_Queue.API.Models.LogAnalysisInput", "JobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Job");
+                });
+
+            modelBuilder.Entity("Mini_Job_Queue.API.Models.LogAnalysisResult", b =>
+                {
+                    b.HasOne("Mini_Job_Queue.API.Models.Job", "Job")
+                        .WithOne("LogAnalysisResult")
+                        .HasForeignKey("Mini_Job_Queue.API.Models.LogAnalysisResult", "JobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Job");
+                });
+
             modelBuilder.Entity("Mini_Job_Queue.API.Models.UrlCheckResult", b =>
                 {
                     b.HasOne("Mini_Job_Queue.API.Models.Job", "Job")
@@ -87,6 +157,10 @@ namespace Mini_Job_Queue.API.Migrations
 
             modelBuilder.Entity("Mini_Job_Queue.API.Models.Job", b =>
                 {
+                    b.Navigation("LogAnalysisInput");
+
+                    b.Navigation("LogAnalysisResult");
+
                     b.Navigation("Results");
                 });
 #pragma warning restore 612, 618

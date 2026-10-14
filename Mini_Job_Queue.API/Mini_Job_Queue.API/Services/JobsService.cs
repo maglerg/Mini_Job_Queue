@@ -28,6 +28,7 @@ public class JobsService
         {
             Id = Guid.NewGuid(),
             Status = JobStatus.Queued,
+            Type = JobType.UrlCheck,
             CreatedAt = DateTime.UtcNow,
             Results = request.Urls.Select(url => new UrlCheckResult
             {

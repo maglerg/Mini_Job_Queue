@@ -3,7 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Mini_Job_Queue.API.Context;
 using Mini_Job_Queue.API.DTOs;
+using Mini_Job_Queue.API.Models;
+using Mini_Job_Queue.API.Models.Enums;
+using Mini_Job_Queue.API.Queue;
 using Mini_Job_Queue.API.Services;
+using System.Text.Json;
 
 namespace Mini_Job_Queue.API.Controllers
 {
@@ -13,11 +17,16 @@ namespace Mini_Job_Queue.API.Controllers
     {
         private readonly AppDbContext _dbContext;
         private readonly JobsService _jobsService;
+        private readonly IJobQueue _jobQueue;
 
-        public JobsController(AppDbContext dbContext, JobsService jobsService)
+        public JobsController(
+    AppDbContext dbContext,
+    JobsService jobsService,
+    IJobQueue jobQueue)
         {
             _dbContext = dbContext;
             _jobsService = jobsService;
+            _jobQueue = jobQueue;
         }
 
         // создать задачу
@@ -54,6 +63,7 @@ namespace Mini_Job_Queue.API.Controllers
             var job = await _dbContext.Jobs
                 .AsNoTracking()
                 .Include(j => j.Results)
+                .Include(j => j.LogAnalysisResult)
                 .FirstOrDefaultAsync(
                     j => j.Id == id,
                     cancellationToken);
@@ -63,18 +73,45 @@ namespace Mini_Job_Queue.API.Controllers
                 return NotFound();
             }
 
-            var response = new JobDetailsResponse
+            LogAnalysisResultResponse? logResult = null;
+
+            if (job.LogAnalysisResult is not null)
+            {
+                var savedResult = job.LogAnalysisResult;
+
+                logResult = new LogAnalysisResultResponse
+                {
+                    TotalLines = savedResult.TotalLines,
+                    ParsedLines = savedResult.ParsedLines,
+                    InvalidLines = savedResult.InvalidLines,
+
+                    CategoryCounts = DeserializeDictionary(
+                        savedResult.CategoryCountsJson),
+
+                    TopMessages = DeserializeDictionary(
+                        savedResult.TopMessagesJson),
+
+                    FailedAuthenticationByHost = DeserializeDictionary(
+                        savedResult.FailedAuthenticationByHostJson)
+                };
+            }
+
+            return Ok(new JobDetailsResponse
             {
                 Id = job.Id,
+                Type = job.Type.ToString(),
                 Status = job.Status.ToString(),
                 CreatedAt = job.CreatedAt,
                 StartedAt = job.StartedAt,
                 CompletedAt = job.CompletedAt,
+
                 ExecutionTimeMs =
-    job.StartedAt.HasValue && job.CompletedAt.HasValue
-        ? (long)(job.CompletedAt.Value - job.StartedAt.Value)
-            .TotalMilliseconds
-        : null,
+                    job.StartedAt.HasValue && job.CompletedAt.HasValue
+                        ? (long)(
+                            job.CompletedAt.Value - job.StartedAt.Value)
+                            .TotalMilliseconds
+                        : null,
+
                 Results = job.Results.Select(result =>
                     new UrlCheckResultResponse
                     {
@@ -83,10 +120,62 @@ namespace Mini_Job_Queue.API.Controllers
                         HttpStatusCode = result.HttpStatusCode,
                         ResponseTimeMs = result.ResponseTimeMs,
                         Error = result.Error
-                    }).ToList()
+                    }).ToList(),
+
+                LogAnalysisResult = logResult
+            });
+        }
+
+        private static Dictionary<string, int> DeserializeDictionary(
+            string json)
+        {
+            return JsonSerializer.Deserialize<Dictionary<string, int>>(json)
+                ?? new Dictionary<string, int>();
+        }
+
+        [HttpPost("log-analysis")]
+        public async Task<ActionResult<object>> CreateLogAnalysis(
+            CreateLogAnalysisJobRequest request,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(request.SourceText))
+            {
+                return BadRequest(new
+                {
+                    error = "Необходимо передать текст логов."
+                });
+            }
+
+            await using var transaction =
+                await _dbContext.Database.BeginTransactionAsync(
+                    cancellationToken);
+
+            var job = new Job
+            {
+                Type = JobType.LogAnalysis,
+                Status = JobStatus.Queued,
+                CreatedAt = DateTime.UtcNow,
+                LogAnalysisInput = new LogAnalysisInput
+                {
+                    SourceText = request.SourceText
+                }
             };
 
-            return Ok(response);
+            _dbContext.Jobs.Add(job);
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            await _jobQueue.EnqueueAsync(
+                job.Id,
+                cancellationToken);
+
+            return Accepted(new
+            {
+                jobId = job.Id,
+                status = job.Status.ToString()
+            });
         }
+
     }
 }

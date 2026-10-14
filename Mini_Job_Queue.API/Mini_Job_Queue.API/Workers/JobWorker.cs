@@ -1,4 +1,4 @@
-﻿
+﻿using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -8,6 +8,7 @@ using Mini_Job_Queue.API.Models;
 using Mini_Job_Queue.API.Models.Enums;
 using Mini_Job_Queue.API.Queue;
 using Mini_Job_Queue.API.Services;
+using Mini_Job_Queue.API.Services.LogAnalysis;
 
 namespace Mini_Job_Queue.API.Workers;
 
@@ -48,15 +49,14 @@ public class JobWorker : BackgroundService
         var dbContext = scope.ServiceProvider
             .GetRequiredService<AppDbContext>();
 
-        var urlCheckService = scope.ServiceProvider
-            .GetRequiredService<UrlCheckService>();
-
         Job? job = null;
 
         try
         {
             job = await dbContext.Jobs
                 .Include(j => j.Results)
+                .Include(j => j.LogAnalysisInput)
+                .Include(j => j.LogAnalysisResult)
                 .FirstOrDefaultAsync(
                     j => j.Id == jobId,
                     stoppingToken);
@@ -69,45 +69,40 @@ public class JobWorker : BackgroundService
 
                 return;
             }
+
             _logger.LogInformation(
-    "Начало обработки задачи {JobId} в {Time}",
-    jobId,
-    DateTime.UtcNow
-);
+                "Начало обработки задачи {JobId}, тип: {JobType}, время: {Time}",
+                jobId,
+                job.Type,
+                DateTime.UtcNow);
+
             job.Status = JobStatus.Running;
             job.StartedAt = DateTime.UtcNow;
 
             await dbContext.SaveChangesAsync(stoppingToken);
 
-
-            foreach (var result in job.Results)
+            switch (job.Type)
             {
-                _logger.LogInformation(
-    "Начинаю проверку URL: {Url}",
-    result.Url);
+                case JobType.UrlCheck:
+                    await ProcessUrlCheckAsync(
+                        job,
+                        scope.ServiceProvider,
+                        dbContext,
+                        stoppingToken);
+                    break;
 
-                var outcome = await urlCheckService.CheckUrlAsync(
-                    result.Url,
-                    stoppingToken);
+                case JobType.LogAnalysis:
+                    await ProcessLogAnalysisAsync(
+                        job,
+                        scope.ServiceProvider,
+                        dbContext,
+                        stoppingToken);
+                    break;
 
-                _logger.LogInformation(
-                    "Результат проверки URL: {Url}, HTTP: {StatusCode}, Время: {Time} мс, Ошибка: {Error}",
-                    result.Url,
-                    outcome.HttpStatusCode,
-                    outcome.ResponseTimeMs,
-                    outcome.Error);
-
-                result.HttpStatusCode = outcome.HttpStatusCode;
-                result.ResponseTimeMs = outcome.ResponseTimeMs;
-                result.Error = outcome.Error;
-
-                await dbContext.SaveChangesAsync(stoppingToken);
+                default:
+                    throw new InvalidOperationException(
+                        $"Неизвестный тип задачи: {job.Type}");
             }
-            _logger.LogInformation(
-    "Завершение обработки задачи {JobId} в {Time}",
-    jobId,
-    DateTime.UtcNow
-);
 
             job.Status = JobStatus.Completed;
             job.CompletedAt = DateTime.UtcNow;
@@ -149,5 +144,99 @@ public class JobWorker : BackgroundService
                 }
             }
         }
+    }
+
+    private async Task ProcessUrlCheckAsync(
+        Job job,
+        IServiceProvider services,
+        AppDbContext dbContext,
+        CancellationToken stoppingToken)
+    {
+        var urlCheckService = services
+            .GetRequiredService<UrlCheckService>();
+
+        foreach (var result in job.Results)
+        {
+            stoppingToken.ThrowIfCancellationRequested();
+
+            _logger.LogInformation(
+                "Начинаю проверку URL: {Url}",
+                result.Url);
+
+            var outcome = await urlCheckService.CheckUrlAsync(
+                result.Url,
+                stoppingToken);
+
+            _logger.LogInformation(
+                "Результат проверки URL: {Url}, HTTP: {StatusCode}, Время: {Time} мс, Ошибка: {Error}",
+                result.Url,
+                outcome.HttpStatusCode,
+                outcome.ResponseTimeMs,
+                outcome.Error);
+
+            result.HttpStatusCode = outcome.HttpStatusCode;
+            result.ResponseTimeMs = outcome.ResponseTimeMs;
+            result.Error = outcome.Error;
+
+            await dbContext.SaveChangesAsync(stoppingToken);
+        }
+    }
+
+    private async Task ProcessLogAnalysisAsync(
+        Job job,
+        IServiceProvider services,
+        AppDbContext dbContext,
+        CancellationToken stoppingToken)
+    {
+        var input = job.LogAnalysisInput
+            ?? throw new InvalidOperationException(
+                $"У задачи {job.Id} отсутствует исходный текст логов");
+
+        var analyzer = services
+            .GetRequiredService<LogAnalysisService>();
+
+        _logger.LogInformation(
+            "Начинаю анализ логов задачи {JobId}",
+            job.Id);
+
+        stoppingToken.ThrowIfCancellationRequested();
+
+        var summary = analyzer.Analyze(input.SourceText);
+
+        stoppingToken.ThrowIfCancellationRequested();
+
+        var result = job.LogAnalysisResult;
+
+        if (result is null)
+        {
+            result = new LogAnalysisResult
+            {
+                JobId = job.Id
+            };
+
+            dbContext.LogAnalysisResults.Add(result);
+        }
+        job.LogAnalysisResult = result;
+
+        result.TotalLines = summary.TotalLines;
+        result.ParsedLines = summary.ParsedLines;
+        result.InvalidLines = summary.InvalidLines;
+
+        result.CategoryCountsJson =
+            JsonSerializer.Serialize(summary.CategoryCounts);
+
+        result.TopMessagesJson =
+            JsonSerializer.Serialize(summary.TopMessages);
+        result.FailedAuthenticationByHostJson =
+    JsonSerializer.Serialize(summary.FailedAuthenticationByHost);
+
+        await dbContext.SaveChangesAsync(stoppingToken);
+
+        _logger.LogInformation(
+            "Анализ задачи {JobId} завершён. Всего строк: {Total}, разобрано: {Parsed}, некорректных: {Invalid}",
+            job.Id,
+            summary.TotalLines,
+            summary.ParsedLines,
+            summary.InvalidLines);
     }
 }

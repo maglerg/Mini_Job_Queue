@@ -14,5 +14,10 @@ public class JobDetailsResponse
     public DateTime? CompletedAt { get; set; }
     public long? ExecutionTimeMs { get; set; }
 
+    public string Type { get; set; } = string.Empty;
+
+    public LogAnalysisResultResponse? LogAnalysisResult { get; set; }
+
+
     public List<UrlCheckResultResponse> Results { get; set; } = [];
 }
