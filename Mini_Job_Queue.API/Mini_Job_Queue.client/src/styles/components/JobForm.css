@@ -1,32 +1,138 @@
+
+/* ========================================
+   Форма проверки URL
+======================================== */
+
 .job-form {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    max-width: 600px;
+    width: 100%;
+    max-width: 680px;
 }
 
+    /* Подпись поля */
+
     .job-form label {
-        font-weight: 600;
+        color: #363c54;
+        font-size: 14px;
+        font-weight: 700;
     }
 
+    /* Поле ввода */
+
     .job-form textarea {
-        padding: 12px;
-        font: inherit;
+        display: block;
+        width: 100%;
+        min-width: 0;
+        min-height: 140px;
+        padding: 16px;
+        color: #20243a;
+        background: #fbfcff;
+        border: 1px solid #dfe3ef;
+        border-radius: 16px;
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1.7;
         resize: vertical;
-        border: 1px solid #ccc;
-        border-radius: 6px;
+        transition: border-color 220ms ease, box-shadow 220ms ease, background 220ms ease;
     }
+
+        /* Подсказка внутри поля */
+
+        .job-form textarea::placeholder {
+            color: #a2a9bb;
+            opacity: 1;
+        }
+
+        /* Наведение на поле */
+
+        .job-form textarea:hover:not(:disabled) {
+            border-color: #b9b5ff;
+        }
+
+        /* Фокус на поле */
+
+        .job-form textarea:focus {
+            outline: none;
+            background: #fff;
+            border-color: #635bff;
+            box-shadow: 0 0 0 4px rgba(99, 91, 255, 0.12);
+        }
+
+    /* Кнопка отправки */
 
     .job-form button {
         align-self: flex-start;
-        padding: 10px 16px;
-        border: none;
-        border-radius: 6px;
+        padding: 13px 22px;
+        color: #fff;
+        background: linear-gradient( 135deg, #7168ff 0%, #5950ed 100% );
+        border: 1px solid transparent;
+        border-radius: 12px;
+        box-shadow: 0 5px 14px rgba(99, 91, 255, 0.2);
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 700;
         cursor: pointer;
+        transition: transform 220ms ease, box-shadow 220ms ease, background 220ms ease, opacity 220ms ease;
     }
+
+        /* Наведение на активную кнопку */
+
+        .job-form button:hover:not(:disabled) {
+            background: linear-gradient( 135deg, #635bff 0%, #483fe0 100% );
+            box-shadow: 0 8px 22px rgba(99, 91, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Нажатие */
+
+        .job-form button:active:not(:disabled) {
+            transform: translateY(0) scale(0.98);
+        }
+
+        /* Клавиатурная навигация */
+
+        .job-form button:focus-visible {
+            outline: 3px solid rgba(99, 91, 255, 0.4);
+            outline-offset: 3px;
+        }
+
+        /* Заблокированные элементы */
 
         .job-form button:disabled,
         .job-form textarea:disabled {
             cursor: not-allowed;
-            opacity: 0.6;
+            opacity: 0.55;
         }
+
+        .job-form button:disabled {
+            box-shadow: none;
+            transform: none;
+        }
+
+    .job-form textarea:disabled {
+        background: #f0f1f6;
+    }
+
+/* Телефоны */
+
+@media (max-width: 600px) {
+    .job-form {
+        max-width: none;
+    }
+
+        .job-form button {
+            align-self: stretch;
+            width: 100%;
+        }
+}
+
+/* Учитываем настройки пользователя */
+
+@media (prefers-reduced-motion: reduce) {
+    .job-form button,
+    .job-form textarea {
+        transition: none;
+    }
+}

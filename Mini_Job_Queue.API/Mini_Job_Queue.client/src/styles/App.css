@@ -1,198 +1,415 @@
-/* Общая страница */
+
+/* ========================================
+   1. Глобальные настройки
+======================================== */
+
+:root {
+    color-scheme: light;
+    --color-bg: #f4f6fb;
+    --color-surface: #ffffff;
+    --color-surface-hover: #f8f9ff;
+    --color-text: #20243a;
+    --color-text-secondary: #737b91;
+    --color-primary: #635bff;
+    --color-primary-hover: #5148ed;
+    --color-primary-light: #eeedff;
+    --color-border: #e5e8f1;
+    --color-danger: #d92d45;
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 22px;
+    --shadow-card: 0 4px 20px rgba(36, 43, 85, 0.04), 0 1px 3px rgba(36, 43, 85, 0.04);
+    --shadow-hover: 0 14px 35px rgba(36, 43, 85, 0.09);
+    --transition: 220ms ease;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    min-height: 100%;
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    background: radial-gradient( ellipse at 10% 0%, rgba(99, 91, 255, 0.08), transparent 38% ), var(--color-bg);
+    color: var(--color-text);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+button,
+textarea,
+input,
+select {
+    font: inherit;
+}
+
+button {
+    -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+    color: #fff;
+    background: var(--color-primary);
+}
+
+
+/* ========================================
+   2. Основная страница
+======================================== */
+
 .app {
-    max-width: 900px;
-    margin: 40px auto;
-    padding: 24px;
-    font-family: Arial, sans-serif;
-    color: #222;
+    width: min(100% - 40px, 1000px);
+    margin: 48px auto;
+    padding: 36px;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(229, 232, 241, 0.9);
+    border-radius: 28px;
+    box-shadow: 0 20px 70px rgba(36, 43, 85, 0.06), 0 2px 8px rgba(36, 43, 85, 0.025);
+    animation: page-enter 650ms ease both;
 }
 
     .app h1 {
-        margin-bottom: 8px;
+        margin: 0 0 12px;
+        font-size: clamp(28px, 4vw, 38px);
+        font-weight: 800;
+        line-height: 1.2;
+        letter-spacing: -1.3px;
     }
 
     .app > p {
-        color: #555;
-        line-height: 1.5;
+        max-width: 760px;
+        margin: 0;
+        color: var(--color-text-secondary);
+        font-size: 15px;
+        line-height: 1.8;
     }
 
-/* Информация о задаче */
-.job-info {
-    margin-top: 32px;
-    padding: 24px;
-    background: #f7f8fa;
-    border: 1px solid #e0e3e8;
-    border-radius: 10px;
-    overflow-wrap: anywhere;
-}
 
-    .job-info h2 {
-        margin-top: 0;
-    }
+/* ========================================
+   3. Меню выбора типа задачи
+======================================== */
 
-    .job-info h3 {
-        margin-top: 24px;
-    }
-
-    /* Отдельный результат */
-    .job-info article {
-        margin-top: 12px;
-        padding: 16px;
-        background: #fff;
-        border: 1px solid #e0e3e8;
-        border-radius: 8px;
-    }
-
-        .job-info article p {
-            margin: 6px 0;
-        }
-
-/* Ошибки */
-.error-message {
-    color: #b42318;
-    overflow-wrap: anywhere;
-}
-
-/* Мобильные устройства */
-@media (max-width: 600px) {
-    .app {
-        margin: 16px auto;
-        padding: 16px;
-    }
-
-    .job-info {
-        padding: 16px;
-    }
-
-        .job-info article {
-            padding: 12px;
-        }
-
-    .job-form button {
-        align-self: stretch;
-    }
-}
-
-/* Меню выбора типа задачи */
 .mode-menu {
     display: flex;
     gap: 12px;
-    margin: 24px 0;
+    margin: 30px 0;
+    padding: 6px;
+    background: #f0f2f9;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
 }
 
     .mode-menu button {
+        position: relative;
         flex: 1;
-        padding: 12px 16px;
-        border: 1px solid #d0d5dd;
-        border-radius: 8px;
-        background: #fff;
-        color: #344054;
-        font-size: 15px;
-        font-weight: 600;
+        min-width: 0;
+        padding: 14px 18px;
+        color: #606982;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 700;
         cursor: pointer;
-        transition: background 0.2s, border-color 0.2s;
+        transition: color var(--transition), background var(--transition), border-color var(--transition), box-shadow var(--transition), transform var(--transition);
     }
 
-        .mode-menu button:hover {
-            background: #f2f4f7;
+        .mode-menu button:hover:not(.active) {
+            color: var(--color-primary);
+            background: rgba(255, 255, 255, 0.65);
+        }
+
+        .mode-menu button:active {
+            transform: scale(0.98);
         }
 
         .mode-menu button.active {
-            color: #fff;
-            background: #344054;
-            border-color: #344054;
+            color: var(--color-primary);
+            background: #fff;
+            border-color: #e7e5ff;
+            box-shadow: 0 3px 10px rgba(49, 45, 120, 0.06), 0 1px 3px rgba(49, 45, 120, 0.04);
         }
 
-/* Форма анализа логов */
-.log-form-section {
-    margin-top: 24px;
-}
 
+/* ========================================
+   4. Общие стили форм
+======================================== */
+
+.job-form,
 .log-form {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-top: 16px;
+    gap: 12px;
 }
 
+.job-form {
+    max-width: 680px;
+    animation: content-enter 450ms ease both;
+}
+
+.log-form {
+    margin-top: 20px;
+}
+
+    .job-form label,
     .log-form label {
-        font-weight: 600;
-    }
-
-    .log-form textarea {
-        box-sizing: border-box;
-        width: 100%;
-        min-height: 220px;
-        padding: 14px;
-        border: 1px solid #d0d5dd;
-        border-radius: 8px;
-        font-family: Consolas, monospace;
+        color: #363c54;
         font-size: 14px;
-        line-height: 1.5;
+        font-weight: 700;
+    }
+
+    .job-form textarea,
+    .log-form textarea {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        padding: 16px;
+        color: var(--color-text);
+        background: #fbfcff;
+        border: 1px solid #dfe3ef;
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        line-height: 1.7;
         resize: vertical;
+        transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
     }
 
-        .log-form textarea:focus {
-            outline: 2px solid #98a2b3;
-            outline-offset: 1px;
-        }
+.job-form textarea {
+    min-height: 140px;
+}
 
-    .log-form button {
-        align-self: flex-start;
-        padding: 12px 20px;
-        border: none;
-        border-radius: 8px;
-        background: #344054;
-        color: #fff;
-        font-weight: 600;
-        cursor: pointer;
+.log-form textarea {
+    min-height: 260px;
+    font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+    font-size: 13px;
+    tab-size: 4;
+}
+
+    .job-form textarea::placeholder,
+    .log-form textarea::placeholder {
+        color: #a2a9bb;
+        opacity: 1;
     }
 
-        .log-form button:hover:not(:disabled) {
-            background: #475467;
-        }
+    .job-form textarea:hover:not(:disabled),
+    .log-form textarea:hover:not(:disabled) {
+        border-color: #b9b5ff;
+    }
 
-        .log-form button:disabled {
-            opacity: 0.55;
-            cursor: not-allowed;
-        }
+    .job-form textarea:focus,
+    .log-form textarea:focus {
+        outline: none;
+        background: #fff;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 4px rgba(99, 91, 255, 0.12);
+    }
+
+    .job-form textarea:disabled,
+    .log-form textarea:disabled {
+        background: #f0f1f6;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+
+/* ========================================
+   5. Кнопки
+======================================== */
+
+.job-form button,
+.log-form button {
+    align-self: flex-start;
+    padding: 13px 22px;
+    color: #fff;
+    background: linear-gradient( 135deg, #7168ff 0%, #5950ed 100% );
+    border: 1px solid transparent;
+    border-radius: 12px;
+    box-shadow: 0 5px 14px rgba(99, 91, 255, 0.2);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform var(--transition), box-shadow var(--transition), background var(--transition), opacity var(--transition);
+}
+
+    .job-form button:hover:not(:disabled),
+    .log-form button:hover:not(:disabled) {
+        background: linear-gradient( 135deg, #635bff 0%, #483fe0 100% );
+        box-shadow: 0 8px 22px rgba(99, 91, 255, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .job-form button:active:not(:disabled),
+    .log-form button:active:not(:disabled) {
+        transform: translateY(0) scale(0.98);
+    }
+
+    .job-form button:disabled,
+    .log-form button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+    }
+
+    .job-form button:focus-visible,
+    .log-form button:focus-visible,
+    .mode-menu button:focus-visible {
+        outline: 3px solid rgba(99, 91, 255, 0.4);
+        outline-offset: 3px;
+    }
+
+
+/* ========================================
+   6. Секция анализа логов
+======================================== */
+
+.log-form-section {
+    margin-top: 30px;
+    animation: content-enter 450ms ease both;
+}
+
+    .log-form-section h2 {
+        margin: 0 0 8px;
+        font-size: 22px;
+        font-weight: 750;
+        letter-spacing: -0.5px;
+    }
 
 .input-hint {
-    margin: 0;
-    color: #667085;
+    margin: 2px 0 0;
+    color: var(--color-text-secondary);
     font-size: 13px;
+    line-height: 1.7;
 }
 
-/* Карточки общей статистики */
+
+/* ========================================
+   7. Информация о задаче
+======================================== */
+
+.job-info {
+    margin-top: 32px;
+    padding: 28px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    overflow-wrap: anywhere;
+    animation: content-enter 500ms ease both;
+}
+
+    .job-info h2 {
+        margin: 0 0 16px;
+        font-size: 23px;
+        font-weight: 800;
+        letter-spacing: -0.6px;
+    }
+
+    .job-info h3 {
+        margin: 28px 0 14px;
+        font-size: 17px;
+        font-weight: 750;
+        letter-spacing: -0.2px;
+    }
+
+.job-id {
+    color: var(--color-primary);
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+
+
+/* ========================================
+   8. Карточки результатов
+======================================== */
+
+.job-info article {
+    margin-top: 14px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 8px rgba(36, 43, 85, 0.025);
+    transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+}
+
+    .job-info article:hover {
+        border-color: #d4d1ff;
+        box-shadow: var(--shadow-hover);
+        transform: translateY(-2px);
+    }
+
+    .job-info article p {
+        margin: 8px 0;
+        font-size: 14px;
+        line-height: 1.7;
+        overflow-wrap: anywhere;
+    }
+
+        .job-info article p:last-child {
+            margin-bottom: 0;
+        }
+
+
+/* ========================================
+   9. Общая статистика
+======================================== */
+
 .statistics-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 20px;
+    gap: 16px;
+    margin-top: 24px;
 }
 
     .statistics-grid article {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 12px;
+        min-width: 0;
         margin: 0;
-        padding: 18px;
+        padding: 22px;
+        background: linear-gradient( 145deg, #ffffff 0%, #fafaff 100% );
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+        animation: card-enter 450ms ease both;
     }
 
+        .statistics-grid article:hover {
+            border-color: #d5d1ff;
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-4px);
+        }
+
         .statistics-grid article span {
-            color: #667085;
+            color: var(--color-text-secondary);
             font-size: 13px;
+            line-height: 1.5;
         }
 
         .statistics-grid article strong {
-            font-size: 28px;
+            color: var(--color-primary);
+            font-size: clamp(24px, 3vw, 32px);
+            font-weight: 800;
+            line-height: 1.2;
+            letter-spacing: -1px;
+            overflow-wrap: anywhere;
         }
 
-/* Списки статистики */
+
+/* ========================================
+   10. Списки статистики
+======================================== */
+
 .statistics-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
 }
 
     .statistics-list article {
@@ -200,49 +417,241 @@
         align-items: flex-start;
         justify-content: space-between;
         gap: 16px;
+        min-width: 0;
         margin: 0;
-        padding: 12px 14px;
+        padding: 15px 18px;
+        background: #fff;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        transition: background var(--transition), border-color var(--transition), transform var(--transition);
     }
+
+        .statistics-list article:hover {
+            background: var(--color-surface-hover);
+            border-color: #d5d1ff;
+            transform: translateX(3px);
+        }
 
         .statistics-list article strong {
             flex-shrink: 0;
+            color: var(--color-primary);
+            font-weight: 750;
         }
+
+
+/* ========================================
+   11. Сообщения логов
+======================================== */
 
 .log-message {
     min-width: 0;
+    max-width: 100%;
     margin: 0 !important;
+    color: #525b73;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
-    font-family: Consolas, monospace;
-    font-size: 13px;
+    word-break: break-word;
+    font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+    font-size: 12px;
+    line-height: 1.8;
 }
 
-.job-id {
+
+/* ========================================
+   12. Ошибки
+======================================== */
+
+.error-message {
+    margin: 16px 0;
+    padding: 14px 16px;
+    color: var(--color-danger);
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    border-left: 4px solid var(--color-danger);
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.7;
     overflow-wrap: anywhere;
+    animation: content-enter 300ms ease both;
 }
 
-@media (max-width: 600px) {
-    .mode-menu {
-        flex-direction: column;
+
+/* ========================================
+   13. Анимации
+======================================== */
+
+@keyframes page-enter {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes content-enter {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes card-enter {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* ========================================
+   14. Адаптация для планшетов
+======================================== */
+
+@media (max-width: 800px) {
+    .app {
+        width: min(100% - 28px, 1000px);
+        margin: 24px auto;
+        padding: 26px;
+        border-radius: 22px;
     }
 
     .statistics-grid {
-        grid-template-columns: 1fr;
+        gap: 12px;
     }
 
         .statistics-grid article {
-            padding: 14px;
+            padding: 16px;
+        }
+
+    .job-info {
+        padding: 22px;
+    }
+}
+
+
+/* ========================================
+   15. Адаптация для телефонов
+======================================== */
+
+@media (max-width: 600px) {
+    .app {
+        width: calc(100% - 20px);
+        margin: 10px auto;
+        padding: 20px 16px;
+        border-radius: 18px;
+    }
+
+        .app h1 {
+            font-size: 28px;
+            letter-spacing: -0.8px;
+        }
+
+        .app > p {
+            font-size: 14px;
+        }
+
+    .mode-menu {
+        flex-direction: column;
+        gap: 8px;
+        margin: 22px 0;
+    }
+
+        .mode-menu button {
+            width: 100%;
+            padding: 13px;
+        }
+
+    .job-form button,
+    .log-form button {
+        align-self: stretch;
+        width: 100%;
+    }
+
+    .job-form textarea,
+    .log-form textarea {
+        padding: 13px;
+    }
+
+    .log-form textarea {
+        min-height: 220px;
+    }
+
+    .log-form-section {
+        margin-top: 24px;
+    }
+
+        .log-form-section h2 {
+            font-size: 20px;
+        }
+
+    .job-info {
+        margin-top: 24px;
+        padding: 18px;
+        border-radius: 16px;
+    }
+
+        .job-info h2 {
+            font-size: 20px;
+        }
+
+        .job-info h3 {
+            margin-top: 22px;
+            font-size: 16px;
+        }
+
+        .job-info article {
+            padding: 15px;
+        }
+
+    .statistics-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+        .statistics-grid article {
+            padding: 17px;
         }
 
             .statistics-grid article strong {
-                font-size: 24px;
+                font-size: 26px;
             }
 
     .statistics-list article {
         gap: 10px;
+        padding: 12px;
     }
 
-    .log-form button {
-        align-self: stretch;
+    .log-message {
+        font-size: 11px;
+    }
+}
+
+
+/* ========================================
+   16. Уменьшение анимации по настройкам ОС
+======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
     }
 }
