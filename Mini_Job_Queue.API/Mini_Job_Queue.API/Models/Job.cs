@@ -13,6 +13,9 @@ namespace Mini_Job_Queue.API.Models
         public DateTime? StartedAt { get; set; }
 
         public DateTime? CompletedAt { get; set; }
+        public Guid? AutomationRuleId { get; set; }
+
+        public AutomationRule? AutomationRule { get; set; }
 
         public List<UrlCheckResult> Results { get; set; } = new();
 

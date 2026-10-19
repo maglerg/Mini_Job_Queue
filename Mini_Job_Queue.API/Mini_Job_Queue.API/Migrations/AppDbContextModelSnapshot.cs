@@ -22,10 +22,65 @@ namespace Mini_Job_Queue.API.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Mini_Job_Queue.API.Models.AutomationRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AutType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("IntervalSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastRunAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("NextRunAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AutomationRules");
+                });
+
+            modelBuilder.Entity("Mini_Job_Queue.API.Models.AutomationRuleUrl", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AutomationRuleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutomationRuleId");
+
+                    b.ToTable("AutomationRuleUrls");
+                });
+
             modelBuilder.Entity("Mini_Job_Queue.API.Models.Job", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AutomationRuleId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("CompletedAt")
@@ -44,6 +99,8 @@ namespace Mini_Job_Queue.API.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AutomationRuleId");
 
                     b.ToTable("Jobs");
                 });
@@ -122,6 +179,27 @@ namespace Mini_Job_Queue.API.Migrations
                     b.ToTable("UrlCheckResults");
                 });
 
+            modelBuilder.Entity("Mini_Job_Queue.API.Models.AutomationRuleUrl", b =>
+                {
+                    b.HasOne("Mini_Job_Queue.API.Models.AutomationRule", "AutomationRule")
+                        .WithMany("Urls")
+                        .HasForeignKey("AutomationRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AutomationRule");
+                });
+
+            modelBuilder.Entity("Mini_Job_Queue.API.Models.Job", b =>
+                {
+                    b.HasOne("Mini_Job_Queue.API.Models.AutomationRule", "AutomationRule")
+                        .WithMany("Jobs")
+                        .HasForeignKey("AutomationRuleId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AutomationRule");
+                });
+
             modelBuilder.Entity("Mini_Job_Queue.API.Models.LogAnalysisInput", b =>
                 {
                     b.HasOne("Mini_Job_Queue.API.Models.Job", "Job")
@@ -153,6 +231,13 @@ namespace Mini_Job_Queue.API.Migrations
                         .IsRequired();
 
                     b.Navigation("Job");
+                });
+
+            modelBuilder.Entity("Mini_Job_Queue.API.Models.AutomationRule", b =>
+                {
+                    b.Navigation("Jobs");
+
+                    b.Navigation("Urls");
                 });
 
             modelBuilder.Entity("Mini_Job_Queue.API.Models.Job", b =>

@@ -21,7 +21,11 @@ namespace Mini_Job_Queue.API.Context
 
         public DbSet<LogAnalysisResult> LogAnalysisResults
             => Set<LogAnalysisResult>();
+        public DbSet<AutomationRule> AutomationRules
+    => Set<AutomationRule>();
 
+        public DbSet<AutomationRuleUrl> AutomationRuleUrls
+            => Set<AutomationRuleUrl>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -61,7 +65,17 @@ namespace Mini_Job_Queue.API.Context
     .Property(result => result.FailedAuthenticationByHostJson)
     .IsRequired();
 
+            modelBuilder.Entity<AutomationRule>()
+    .HasMany(rule => rule.Urls)
+    .WithOne(url => url.AutomationRule)
+    .HasForeignKey(url => url.AutomationRuleId)
+    .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<AutomationRule>()
+                .HasMany(rule => rule.Jobs)
+                .WithOne(job => job.AutomationRule)
+                .HasForeignKey(job => job.AutomationRuleId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
 
     }

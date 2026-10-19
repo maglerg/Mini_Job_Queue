@@ -111,7 +111,7 @@ function HomePage() {
 
     return (
         <main className="app">
-            <h1>Mini Job Queue</h1>
+            <h1>Mini Automation Engine</h1>
             <p>
                 Выбери тип фоновой задачи, которую нужно выполнить.
             </p>
