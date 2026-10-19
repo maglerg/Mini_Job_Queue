@@ -655,3 +655,299 @@ button {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ========================================
+   17. Форма автоматизации
+======================================== */
+
+.automation-form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 680px;
+    margin-top: 30px;
+    padding: 28px;
+    background: linear-gradient(145deg, #ffffff 0%, #fafaff 100%);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    animation: content-enter 450ms ease both;
+}
+
+    .automation-form-section h2 {
+        margin: 0 0 4px;
+        font-size: 22px;
+        font-weight: 750;
+        letter-spacing: -0.5px;
+    }
+
+    .automation-form-section > p {
+        margin: 0;
+        color: var(--color-text-secondary);
+        font-size: 14px;
+        line-height: 1.8;
+    }
+
+/* Форма */
+
+.automation-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    margin-top: 8px;
+}
+
+    .automation-form label {
+        margin-top: 4px;
+        color: #363c54;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    /* Список URL */
+
+    .automation-form textarea {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        min-height: 140px;
+        padding: 16px;
+        color: var(--color-text);
+        background: #fbfcff;
+        border: 1px solid #dfe3ef;
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        line-height: 1.7;
+        resize: vertical;
+        transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+    }
+
+        .automation-form textarea::placeholder {
+            color: #a2a9bb;
+            opacity: 1;
+        }
+
+        .automation-form textarea:hover:not(:disabled),
+        .automation-form .interval-input input:hover:not(:disabled) {
+            border-color: #b9b5ff;
+        }
+
+        .automation-form textarea:focus,
+        .automation-form .interval-input input:focus {
+            outline: none;
+            background: #fff;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 4px rgba(99, 91, 255, 0.12);
+        }
+
+        .automation-form textarea:disabled,
+        .automation-form .interval-input input:disabled {
+            background: #f0f1f6;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+    /* Интервал */
+
+    .automation-form .interval-input {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        width: 100%;
+    }
+
+        .automation-form .interval-input input {
+            width: 150px;
+            min-width: 0;
+            padding: 12px 14px;
+            color: var(--color-text);
+            background: #fbfcff;
+            border: 1px solid #dfe3ef;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+        }
+
+        .automation-form .interval-input span {
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+    /* Подсказка */
+
+    .automation-form .input-hint {
+        margin: -3px 0 4px;
+        color: var(--color-text-secondary);
+        font-size: 12px;
+        line-height: 1.7;
+    }
+
+    /* Кнопка */
+
+    .automation-form button {
+        align-self: flex-start;
+        margin-top: 4px;
+        padding: 13px 22px;
+        color: #fff;
+        background: linear-gradient(135deg, #7168ff 0%, #5950ed 100%);
+        border: 1px solid transparent;
+        border-radius: 12px;
+        box-shadow: 0 5px 14px rgba(99, 91, 255, 0.2);
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform var(--transition), box-shadow var(--transition), background var(--transition), opacity var(--transition);
+    }
+
+        .automation-form button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #635bff 0%, #483fe0 100%);
+            box-shadow: 0 8px 22px rgba(99, 91, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .automation-form button:active:not(:disabled) {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .automation-form button:focus-visible {
+            outline: 3px solid rgba(99, 91, 255, 0.4);
+            outline-offset: 3px;
+        }
+
+        .automation-form button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+/* Информационный блок */
+
+.automation-info {
+    width: 100%;
+    max-width: 680px;
+    margin-top: 18px;
+    padding: 22px 24px;
+    background: var(--color-primary-light);
+    border: 1px solid #e5e2ff;
+    border-radius: var(--radius-md);
+    animation: content-enter 450ms ease both;
+}
+
+    .automation-info h3 {
+        margin: 0 0 10px;
+        color: #36345f;
+        font-size: 16px;
+        font-weight: 750;
+    }
+
+    .automation-info p {
+        margin: 0;
+        color: #737394;
+        font-size: 13px;
+        line-height: 1.8;
+    }
+
+        .automation-info p + p {
+            margin-top: 8px;
+        }
+
+/* Адаптация для планшетов и телефонов */
+
+@media (max-width: 800px) {
+    .automation-form-section {
+        padding: 24px;
+    }
+}
+
+@media (max-width: 600px) {
+    .automation-form-section {
+        max-width: none;
+        margin-top: 24px;
+        padding: 20px 16px;
+        border-radius: 18px;
+    }
+
+        .automation-form-section h2 {
+            font-size: 20px;
+        }
+
+    .automation-form textarea {
+        padding: 13px;
+    }
+
+    .automation-form .interval-input input {
+        flex: 1;
+        width: 100%;
+    }
+
+    .automation-form button {
+        align-self: stretch;
+        width: 100%;
+    }
+
+    .automation-info {
+        padding: 18px 16px;
+    }
+}
+
+/* Учитываем настройки пользователя */
+
+@media (prefers-reduced-motion: reduce) {
+    .automation-form-section,
+    .automation-info {
+        animation: none;
+    }
+
+    .automation-form textarea,
+    .automation-form .interval-input input,
+    .automation-form button {
+        transition: none;
+    }
+}
+
+/* Кнопка остановки автоматизации */
+
+.stop-automation-button {
+    margin-top: 12px;
+    padding: 12px 18px;
+    color: #c62840;
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background var(--transition), border-color var(--transition), transform var(--transition), opacity var(--transition);
+}
+
+    .stop-automation-button:hover:not(:disabled) {
+        background: #ffe4e8;
+        border-color: #fda4af;
+        transform: translateY(-1px);
+    }
+
+    .stop-automation-button:active:not(:disabled) {
+        transform: scale(0.98);
+    }
+
+    .stop-automation-button:focus-visible {
+        outline: 3px solid rgba(217, 45, 69, 0.3);
+        outline-offset: 3px;
+    }
+
+    .stop-automation-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+@media (max-width: 600px) {
+    .stop-automation-button {
+        width: 100%;
+    }
+}
