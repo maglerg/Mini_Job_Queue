@@ -52,6 +52,7 @@ builder.Services.AddSingleton<LinuxLogParser>();
 builder.Services.AddSingleton<LinuxLogClassifier>();
 builder.Services.AddSingleton<LogAnalysisService>();
 builder.Services.AddHostedService<AutomationScheduler>();
+builder.Services.AddScoped<AutomationRulesService>();
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();

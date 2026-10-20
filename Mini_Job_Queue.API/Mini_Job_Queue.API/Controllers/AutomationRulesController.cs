@@ -1,9 +1,6 @@
-﻿
-using Microsoft.AspNetCore.Mvc;
-using Mini_Job_Queue.API.Context;
+﻿using Microsoft.AspNetCore.Mvc;
 using Mini_Job_Queue.API.DTOs;
-using Mini_Job_Queue.API.Models;
-using Microsoft.EntityFrameworkCore;
+using Mini_Job_Queue.API.Services;
 
 namespace Mini_Job_Queue.API.Controllers
 {
@@ -11,11 +8,12 @@ namespace Mini_Job_Queue.API.Controllers
     [Route("api/automation-rules")]
     public class AutomationRulesController : ControllerBase
     {
-        private readonly AppDbContext _dbContext;
+        private readonly AutomationRulesService _automationRulesService;
 
-        public AutomationRulesController(AppDbContext dbContext)
+        public AutomationRulesController(
+            AutomationRulesService automationRulesService)
         {
-            _dbContext = dbContext;
+            _automationRulesService = automationRulesService;
         }
 
         [HttpPost]
@@ -23,10 +21,7 @@ namespace Mini_Job_Queue.API.Controllers
             CreateAutomationRuleRequest request,
             CancellationToken cancellationToken)
         {
-            if (request.Urls.Any(url =>
-                !Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
-                (uri.Scheme != Uri.UriSchemeHttp &&
-                 uri.Scheme != Uri.UriSchemeHttps)))
+            if (request.Urls.Any(url => !IsValidHttpUrl(url)))
             {
                 return BadRequest(new
                 {
@@ -34,33 +29,8 @@ namespace Mini_Job_Queue.API.Controllers
                 });
             }
 
-            var now = DateTime.UtcNow;
-
-            var rule = new AutomationRule
-            {
-                Id = Guid.NewGuid(),
-                AutType = request.AutType,
-                IntervalSeconds = request.IntervalSeconds,
-                IsEnabled = true,
-                CreatedAt = now,
-                LastRunAt = null,
-
-                // Первый запуск — через заданный интервал.
-                NextRunAt = now.AddSeconds(
-                    request.IntervalSeconds),
-
-                Urls = request.Urls
-                    .Select(url => new AutomationRuleUrl
-                    {
-                        Id = Guid.NewGuid(),
-                        Url = url.Trim()
-                    })
-                    .ToList()
-            };
-
-            _dbContext.Set<AutomationRule>().Add(rule);
-
-            await _dbContext.SaveChangesAsync(
+            var rule = await _automationRulesService.CreateAsync(
+                request,
                 cancellationToken);
 
             return Accepted(new
@@ -72,49 +42,39 @@ namespace Mini_Job_Queue.API.Controllers
                 nextRunAt = rule.NextRunAt
             });
         }
+
         // Остановить автоматизацию.
         [HttpPost("{id:guid}/stop")]
         public async Task<ActionResult<object>> Stop(
             Guid id,
             CancellationToken cancellationToken)
         {
-            var rule = await _dbContext
-                .Set<AutomationRule>()
-                .FirstOrDefaultAsync(
-                    rule => rule.Id == id,
-                    cancellationToken);
+            var (result, rule) = await _automationRulesService.StopAsync(
+                id,
+                cancellationToken);
 
-            if (rule == null)
+            return result switch
             {
-                return NotFound(new
+                StopAutomationResult.NotFound => NotFound(new
                 {
                     error = "Автоматизация не найдена."
-                });
-            }
+                }),
 
-            if (!rule.IsEnabled)
-            {
-                return Ok(new
+                StopAutomationResult.AlreadyStopped => Ok(new
                 {
-                    ruleId = rule.Id,
+                    ruleId = rule!.Id,
                     isEnabled = false,
                     message = "Автоматизация уже остановлена."
-                });
-            }
+                }),
 
-            rule.IsEnabled = false;
-            rule.NextRunAt = null;
-
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            return Ok(new
-            {
-                ruleId = rule.Id,
-                isEnabled = rule.IsEnabled,
-                message = "Автоматизация остановлена."
-            });
+                _ => Ok(new
+                {
+                    ruleId = rule!.Id,
+                    isEnabled = rule.IsEnabled,
+                    message = "Автоматизация остановлена."
+                })
+            };
         }
-
 
         // Получить историю запусков автоматизации.
         [HttpGet("{id:guid}/runs")]
@@ -122,13 +82,11 @@ namespace Mini_Job_Queue.API.Controllers
             Guid id,
             CancellationToken cancellationToken)
         {
-            var ruleExists = await _dbContext
-                .Set<AutomationRule>()
-                .AnyAsync(
-                    rule => rule.Id == id,
-                    cancellationToken);
+            var runs = await _automationRulesService.GetRunsAsync(
+                id,
+                cancellationToken);
 
-            if (!ruleExists)
+            if (runs is null)
             {
                 return NotFound(new
                 {
@@ -136,34 +94,14 @@ namespace Mini_Job_Queue.API.Controllers
                 });
             }
 
-            var jobs = await _dbContext.Jobs
-                .AsNoTracking()
-                .Where(job => job.AutomationRuleId == id)
-                .Include(job => job.Results)
-                .OrderByDescending(job => job.CreatedAt)
-                .ToListAsync(cancellationToken);
-
-            var runs = jobs.Select(job => new
-            {
-                id = job.Id,
-                status = job.Status.ToString(),
-                type = job.Type.ToString(),
-                createdAt = job.CreatedAt,
-                executionTimeMs = (job.CompletedAt.HasValue && job.StartedAt.HasValue)
-    ? (long)(job.CompletedAt.Value - job.StartedAt.Value).TotalMilliseconds
-    : (long?)null,
-
-                results = job.Results.Select(result => new
-                {
-                    id = result.Id,
-                    url = result.Url,
-                    httpStatusCode = result.HttpStatusCode,
-                    responseTimeMs = result.ResponseTimeMs,
-                    error = result.Error
-                })
-            });
-
             return Ok(runs);
+        }
+
+        private static bool IsValidHttpUrl(string url)
+        {
+            return Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
+                   (uri.Scheme == Uri.UriSchemeHttp ||
+                    uri.Scheme == Uri.UriSchemeHttps);
         }
     }
 }
