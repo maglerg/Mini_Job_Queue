@@ -270,10 +270,7 @@ function HomePage() {
             {mode === 'automation' && (
                 <>
                     <AutomationForm onSubmit={handleCreateAutomation} isSubmitting={isSubmitting} />
-                    <section className="automation-info">
-                        <h3>Как это работает</h3>
-                        <p>Scheduler проверяет расписание правил, создаёт задачи и помещает их в очередь. JobWorker выполняет проверки в фоне.</p>
-                    </section>
+                    
                 </>
             )}
 
