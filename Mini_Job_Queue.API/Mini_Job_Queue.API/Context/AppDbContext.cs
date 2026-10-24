@@ -24,6 +24,12 @@ namespace Mini_Job_Queue.API.Context
         public DbSet<AutomationRule> AutomationRules
     => Set<AutomationRule>();
 
+        public DbSet<WeatherTracking> WeatherTrackings
+            => Set<WeatherTracking>();
+
+        public DbSet<WeatherRecord> WeatherRecords
+            => Set<WeatherRecord>();
+
         public DbSet<AutomationRuleUrl> AutomationRuleUrls
             => Set<AutomationRuleUrl>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -76,6 +82,20 @@ namespace Mini_Job_Queue.API.Context
                 .WithOne(job => job.AutomationRule)
                 .HasForeignKey(job => job.AutomationRuleId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+
+            modelBuilder.Entity<WeatherTracking>()
+                .HasMany(tracking => tracking.Records)
+                .WithOne(record => record.WeatherTracking)
+                .HasForeignKey(record => record.WeatherTrackingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Job>()
+                .HasOne(job => job.WeatherTracking)
+                .WithMany(tracking => tracking.Jobs)
+                .HasForeignKey(job => job.WeatherTrackingId)
+                .OnDelete(DeleteBehavior.SetNull);
+
         }
 
     }

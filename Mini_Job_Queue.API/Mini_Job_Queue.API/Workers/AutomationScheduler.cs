@@ -43,6 +43,7 @@ public class AutomationScheduler : BackgroundService
         _logger.LogInformation("AutomationScheduler остановлен.");
     }
 
+
     private async Task ProcessRulesAsync(
         CancellationToken cancellationToken)
     {
@@ -57,6 +58,8 @@ public class AutomationScheduler : BackgroundService
                 .GetRequiredService<IJobQueue>();
 
             var now = DateTime.UtcNow;
+
+            // 1. Обрабатываем существующие правила проверки URL.
 
             var rules = await dbContext.Set<AutomationRule>()
                 .Include(rule => rule.Urls)
@@ -107,9 +110,49 @@ public class AutomationScheduler : BackgroundService
                     cancellationToken);
 
                 _logger.LogInformation(
-                    "Создана задача {JobId} для правила {RuleId}.",
+                    "Создана задача {JobId} для правила URL {RuleId}.",
                     job.Id,
                     rule.Id);
+            }
+
+            // 2. Обрабатываем расписания отслеживания погоды.
+
+            var weatherTrackings = await dbContext.WeatherTrackings
+                .Where(tracking =>
+                    tracking.IsEnabled &&
+                    tracking.NextRunAt != null &&
+                    tracking.NextRunAt <= now)
+                .ToListAsync(cancellationToken);
+
+            foreach (var tracking in weatherTrackings)
+            {
+                var job = new Job
+                {
+                    Id = Guid.NewGuid(),
+                    Type = JobType.WeatherCheck,
+                    Status = JobStatus.Queued,
+                    CreatedAt = now,
+                    WeatherTrackingId = tracking.Id
+                };
+
+                dbContext.Jobs.Add(job);
+
+                tracking.LastRunAt = now;
+                tracking.NextRunAt = now.AddMinutes(
+                    tracking.IntervalMinutes);
+
+                await dbContext.SaveChangesAsync(
+                    cancellationToken);
+
+                await jobQueue.EnqueueAsync(
+                    job.Id,
+                    cancellationToken);
+
+                _logger.LogInformation(
+                    "Создана задача погоды {JobId} для города {LocationName}. Следующий запуск: {NextRunAt}.",
+                    job.Id,
+                    tracking.LocationName,
+                    tracking.NextRunAt);
             }
         }
         catch (OperationCanceledException)
@@ -124,4 +167,5 @@ public class AutomationScheduler : BackgroundService
                 "Ошибка при обработке правил автоматизации.");
         }
     }
+
 }

@@ -98,9 +98,14 @@ namespace Mini_Job_Queue.API.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("WeatherTrackingId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AutomationRuleId");
+
+                    b.HasIndex("WeatherTrackingId");
 
                     b.ToTable("Jobs");
                 });
@@ -179,6 +184,73 @@ namespace Mini_Job_Queue.API.Migrations
                     b.ToTable("UrlCheckResults");
                 });
 
+            modelBuilder.Entity("Mini_Job_Queue.API.Models.WeatherRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<double?>("PrecipitationMm")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("RelativeHumidityPercent")
+                        .HasColumnType("integer");
+
+                    b.Property<double>("TemperatureCelsius")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("WeatherTrackingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double?>("WindSpeedKmh")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WeatherTrackingId");
+
+                    b.ToTable("WeatherRecords");
+                });
+
+            modelBuilder.Entity("Mini_Job_Queue.API.Models.WeatherTracking", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("IntervalMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastRunAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("LocationName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime?>("NextRunAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("WeatherTrackings");
+                });
+
             modelBuilder.Entity("Mini_Job_Queue.API.Models.AutomationRuleUrl", b =>
                 {
                     b.HasOne("Mini_Job_Queue.API.Models.AutomationRule", "AutomationRule")
@@ -197,7 +269,14 @@ namespace Mini_Job_Queue.API.Migrations
                         .HasForeignKey("AutomationRuleId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("Mini_Job_Queue.API.Models.WeatherTracking", "WeatherTracking")
+                        .WithMany("Jobs")
+                        .HasForeignKey("WeatherTrackingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("AutomationRule");
+
+                    b.Navigation("WeatherTracking");
                 });
 
             modelBuilder.Entity("Mini_Job_Queue.API.Models.LogAnalysisInput", b =>
@@ -233,6 +312,17 @@ namespace Mini_Job_Queue.API.Migrations
                     b.Navigation("Job");
                 });
 
+            modelBuilder.Entity("Mini_Job_Queue.API.Models.WeatherRecord", b =>
+                {
+                    b.HasOne("Mini_Job_Queue.API.Models.WeatherTracking", "WeatherTracking")
+                        .WithMany("Records")
+                        .HasForeignKey("WeatherTrackingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("WeatherTracking");
+                });
+
             modelBuilder.Entity("Mini_Job_Queue.API.Models.AutomationRule", b =>
                 {
                     b.Navigation("Jobs");
@@ -247,6 +337,13 @@ namespace Mini_Job_Queue.API.Migrations
                     b.Navigation("LogAnalysisResult");
 
                     b.Navigation("Results");
+                });
+
+            modelBuilder.Entity("Mini_Job_Queue.API.Models.WeatherTracking", b =>
+                {
+                    b.Navigation("Jobs");
+
+                    b.Navigation("Records");
                 });
 #pragma warning restore 612, 618
         }

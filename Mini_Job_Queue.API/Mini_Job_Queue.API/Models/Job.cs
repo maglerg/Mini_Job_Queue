@@ -17,6 +17,11 @@ namespace Mini_Job_Queue.API.Models
 
         public AutomationRule? AutomationRule { get; set; }
 
+        public Guid? WeatherTrackingId { get; set; }
+
+        public WeatherTracking? WeatherTracking { get; set; }
+
+
         public List<UrlCheckResult> Results { get; set; } = new();
 
         public LogAnalysisInput? LogAnalysisInput { get; set; }

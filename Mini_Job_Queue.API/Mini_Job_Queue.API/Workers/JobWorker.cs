@@ -99,6 +99,23 @@ public class JobWorker : BackgroundService
                         stoppingToken);
                     break;
 
+                case JobType.WeatherCheck:
+                    {
+                        if (job.WeatherTrackingId is not Guid trackingId)
+                        {
+                            throw new InvalidOperationException(
+                                $"У задачи {job.Id} не указан WeatherTrackingId.");
+                        }
+
+                        var weatherService = scope.ServiceProvider
+                            .GetRequiredService<WeatherService>();
+
+                        await weatherService.CollectWeatherAsync(
+                            trackingId,
+                            stoppingToken);
+
+                        break;
+                    }
                 default:
                     throw new InvalidOperationException(
                         $"Неизвестный тип задачи: {job.Type}");
