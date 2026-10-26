@@ -51,9 +51,15 @@ builder.Services.AddScoped<JobsService>();
 builder.Services.AddSingleton<LinuxLogParser>();
 builder.Services.AddSingleton<LinuxLogClassifier>();
 builder.Services.AddSingleton<LogAnalysisService>();
+builder.Services.AddSingleton<AutomationScheduleSignal>();
+
+builder.Services.AddScoped<AutomationScheduleNotifier>();
+
+builder.Services.AddHostedService<PostgresScheduleNotificationListener>();
 builder.Services.AddHostedService<AutomationScheduler>();
 builder.Services.AddScoped<AutomationRulesService>();
 builder.Services.AddScoped<WeatherService>();
+
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();

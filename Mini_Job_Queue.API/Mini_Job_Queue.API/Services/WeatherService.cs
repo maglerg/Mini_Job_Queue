@@ -15,15 +15,18 @@ public class WeatherService
     private readonly AppDbContext _dbContext;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<WeatherService> _logger;
+    private readonly AutomationScheduleNotifier _scheduleNotifier;
 
     public WeatherService(
-        AppDbContext dbContext,
-        IHttpClientFactory httpClientFactory,
-        ILogger<WeatherService> logger)
+    AppDbContext dbContext,
+    IHttpClientFactory httpClientFactory,
+    ILogger<WeatherService> logger,
+    AutomationScheduleNotifier scheduleNotifier)
     {
         _dbContext = dbContext;
         _httpClientFactory = httpClientFactory;
         _logger = logger;
+        _scheduleNotifier = scheduleNotifier;
     }
 
     // Создание отслеживания погоды.
@@ -87,6 +90,7 @@ public class WeatherService
         _dbContext.WeatherTrackings.Add(tracking);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await _scheduleNotifier.NotifyChangedAsync(cancellationToken);
 
         _logger.LogInformation(
             "Создано отслеживание {TrackingId} для города {LocationName}.",
@@ -129,6 +133,8 @@ public class WeatherService
         tracking.NextRunAt = null;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _scheduleNotifier.NotifyChangedAsync(cancellationToken);
 
         _logger.LogInformation(
             "Отслеживание погоды {TrackingId} остановлено.",

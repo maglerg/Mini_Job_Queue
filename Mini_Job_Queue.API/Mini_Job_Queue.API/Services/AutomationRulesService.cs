@@ -15,10 +15,14 @@ public enum StopAutomationResult
 public class AutomationRulesService
 {
     private readonly AppDbContext _dbContext;
+    private readonly AutomationScheduleNotifier _scheduleNotifier;
 
-    public AutomationRulesService(AppDbContext dbContext)
+    public AutomationRulesService(
+    AppDbContext dbContext,
+    AutomationScheduleNotifier scheduleNotifier)
     {
         _dbContext = dbContext;
+        _scheduleNotifier = scheduleNotifier;
     }
 
     public async Task<AutomationRule> CreateAsync(
@@ -51,6 +55,7 @@ public class AutomationRulesService
         _dbContext.Set<AutomationRule>().Add(rule);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await _scheduleNotifier.NotifyChangedAsync(cancellationToken);
 
         return rule;
     }
@@ -76,6 +81,7 @@ public class AutomationRulesService
         rule.NextRunAt = null;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await _scheduleNotifier.NotifyChangedAsync(cancellationToken);
 
         return (StopAutomationResult.Stopped, rule);
     }
