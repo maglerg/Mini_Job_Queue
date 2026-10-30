@@ -63,7 +63,23 @@ export async function stopWeatherTracking(id) {
         'Не удалось остановить отслеживание.'
     );
 }
+// Разовая проверка погоды.
+export async function checkWeather(locationName) {
+    const response = await fetch(`${API_URL}/check`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            locationName
+        })
+    });
 
+    return readResponse(
+        response,
+        'Не удалось выполнить проверку погоды.'
+    );
+}
 // История замеров конкретного города.
 export async function getWeatherHistory(id) {
     const response = await fetch(

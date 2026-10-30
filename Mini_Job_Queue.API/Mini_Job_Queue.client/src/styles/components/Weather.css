@@ -293,3 +293,107 @@
         padding: 15px;
     }
 }
+/* ========================================
+   Разовая проверка погоды
+======================================== */
+
+.weather-check-section {
+    width: 100%;
+    max-width: 680px;
+    margin-top: 30px;
+    padding: 28px;
+    background: linear-gradient(145deg, #ffffff 0%, #fafaff 100%);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    animation: content-enter 450ms ease both;
+}
+
+    .weather-check-section h2 {
+        margin: 0 0 8px;
+        font-size: 22px;
+        font-weight: 750;
+    }
+
+    .weather-check-section > p {
+        color: var(--color-text-secondary);
+        font-size: 14px;
+        line-height: 1.8;
+    }
+
+.weather-check-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+    .weather-check-form label {
+        color: #363c54;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .weather-check-form input {
+        width: 100%;
+        padding: 14px 16px;
+        color: var(--color-text);
+        background: #fbfcff;
+        border: 1px solid #dfe3ef;
+        border-radius: 12px;
+        font-size: 14px;
+        transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+        .weather-check-form input:focus {
+            outline: none;
+            background: #fff;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 4px rgba(99, 91, 255, 0.12);
+        }
+
+    .weather-check-form button {
+        align-self: flex-start;
+        margin-top: 6px;
+        padding: 13px 22px;
+        color: #fff;
+        background: linear-gradient(135deg, #7168ff 0%, #5950ed 100%);
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 5px 14px rgba(99, 91, 255, 0.2);
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+        .weather-check-form button:hover:not(:disabled) {
+            background: var(--color-primary-hover);
+            transform: translateY(-2px);
+        }
+
+        .weather-check-form button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+.weather-check-result {
+    animation: content-enter 450ms ease both;
+}
+
+.weather-check-time {
+    color: var(--color-text-secondary);
+    font-size: 13px;
+}
+
+@media (max-width: 600px) {
+    .weather-check-section {
+        max-width: none;
+        padding: 20px 16px;
+    }
+
+    .weather-check-form button {
+        align-self: stretch;
+        width: 100%;
+    }
+}

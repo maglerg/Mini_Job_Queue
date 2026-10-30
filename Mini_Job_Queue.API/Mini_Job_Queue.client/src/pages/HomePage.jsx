@@ -5,6 +5,9 @@ import JobForm from '../components/JobForm.jsx';
 import AutomationForm from '../components/AutomationForm.jsx';
 import LogAnalysisStatistics from '../components/LogAnalysisStatistics.jsx';
 
+import WeatherCheckForm from '../components/WeatherCheckForm.jsx';
+import WeatherCheckResult from '../components/WeatherCheckResult.jsx';
+
 import WeatherForm from '../components/WeatherForm.jsx';
 import WeatherTrackingList from '../components/WeatherTrackingList.jsx';
 import WeatherHistory from '../components/WeatherHistory.jsx';
@@ -22,6 +25,7 @@ import {
 } from '../api/jobsApi';
 
 import {
+    checkWeather,
     createWeatherTracking,
     getWeatherTrackings,
     stopWeatherTracking,
@@ -46,6 +50,10 @@ function HomePage() {
 
     const [automationRuns, setAutomationRuns] = useState([]);
     const [isStoppingAutomation, setIsStoppingAutomation] = useState(false);
+
+    // Разовая проверка погоды
+    const [weatherCheckResult, setWeatherCheckResult] = useState(null);
+    const [isWeatherChecking, setIsWeatherChecking] = useState(false);
 
     // Состояния автоматизации погоды
     const [weatherTrackings, setWeatherTrackings] = useState([]);
@@ -170,6 +178,26 @@ function HomePage() {
     };
 
     // ========================================
+    // Разовая проверка погоды
+    // ========================================
+
+    const handleWeatherCheck = async (locationName) => {
+        try {
+            setIsWeatherChecking(true);
+            setError('');
+            setWeatherCheckResult(null);
+
+            const result = await checkWeather(locationName);
+
+            setWeatherCheckResult(result);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsWeatherChecking(false);
+        }
+    };
+
+    // ========================================
     // Создание отслеживания погоды
     // ========================================
 
@@ -186,7 +214,6 @@ function HomePage() {
                 intervalMinutes
             });
 
-            // Добавляем созданный город в список.
             setWeatherTrackings((previous) => [
                 createdTracking,
                 ...previous.filter(
@@ -194,7 +221,6 @@ function HomePage() {
                 )
             ]);
 
-            // Сразу открываем историю нового отслеживания.
             setSelectedWeatherId(createdTracking.id);
             setWeatherRecords([]);
 
@@ -262,8 +288,6 @@ function HomePage() {
 
                 setWeatherTrackings(data);
 
-                // Сбрасываем выбор, если отслеживание
-                // больше не присутствует в списке.
                 if (
                     selectedWeatherId &&
                     !data.some(
@@ -441,6 +465,7 @@ function HomePage() {
         setJob(null);
         setAutomation(null);
         setAutomationRuns([]);
+        setWeatherCheckResult(null);
         setError('');
     };
 
@@ -486,6 +511,14 @@ function HomePage() {
                     onClick={() => changeMode('automation')}
                 >
                     Автоматизация
+                </button>
+
+                <button
+                    type="button"
+                    className={mode === 'weather-check' ? 'active' : ''}
+                    onClick={() => changeMode('weather-check')}
+                >
+                    Проверка погоды
                 </button>
 
                 <button
@@ -566,9 +599,7 @@ function HomePage() {
 
                         <button
                             type="submit"
-                            disabled={
-                                isSubmitting || !logs.trim()
-                            }
+                            disabled={isSubmitting || !logs.trim()}
                         >
                             {isSubmitting
                                 ? 'Отправка...'
@@ -685,9 +716,7 @@ function HomePage() {
                                     </p>
 
                                     <p>
-                                        <strong>
-                                            Время выполнения:
-                                        </strong>{' '}
+                                        <strong>Время выполнения:</strong>{' '}
                                         {run.executionTimeMs != null
                                             ? `${run.executionTimeMs} мс`
                                             : '—'}
@@ -695,16 +724,11 @@ function HomePage() {
 
                                     {run.results?.length > 0 && (
                                         <>
-                                            <h4>
-                                                Результаты проверки URL
-                                            </h4>
+                                            <h4>Результаты проверки URL</h4>
 
                                             {run.results.map((result) => (
                                                 <div
-                                                    key={
-                                                        result.id ??
-                                                        result.url
-                                                    }
+                                                    key={result.id ?? result.url}
                                                     style={{
                                                         marginBottom: '10px',
                                                         padding: '10px',
@@ -718,27 +742,20 @@ function HomePage() {
                                                     </p>
 
                                                     <p>
-                                                        <strong>
-                                                            HTTP-статус:
-                                                        </strong>{' '}
-                                                        {result.httpStatusCode
-                                                            ?? '—'}
+                                                        <strong>HTTP-статус:</strong>{' '}
+                                                        {result.httpStatusCode ?? '—'}
                                                     </p>
 
                                                     <p>
-                                                        <strong>
-                                                            Время ответа:
-                                                        </strong>{' '}
-                                                        {result.responseTimeMs
-                                                            != null
+                                                        <strong>Время ответа:</strong>{' '}
+                                                        {result.responseTimeMs != null
                                                             ? `${result.responseTimeMs} мс`
                                                             : '—'}
                                                     </p>
 
                                                     {result.error && (
                                                         <p className="error-message">
-                                                            Ошибка:{' '}
-                                                            {result.error}
+                                                            Ошибка: {result.error}
                                                         </p>
                                                     )}
                                                 </div>
@@ -750,6 +767,32 @@ function HomePage() {
                         )}
                     </section>
                 </>
+            )}
+
+            {/* ========================================
+                Разовая проверка погоды
+            ======================================== */}
+
+            {mode === 'weather-check' && (
+                <section className="weather-section">
+                    <h2>Разовая проверка погоды</h2>
+
+                    <p className="weather-intro">
+                        Укажи город, чтобы получить актуальные
+                        погодные данные без создания автоматизации.
+                    </p>
+
+                    <WeatherCheckForm
+                        onSubmit={handleWeatherCheck}
+                        isSubmitting={isWeatherChecking}
+                    />
+
+                    {weatherCheckResult && (
+                        <WeatherCheckResult
+                            result={weatherCheckResult}
+                        />
+                    )}
+                </section>
             )}
 
             {/* ========================================
@@ -801,10 +844,10 @@ function HomePage() {
             )}
 
             {/* ========================================
-                Результат разовой задачи
+                Результат разовой задачи URL / логов
             ======================================== */}
 
-            {job && mode !== 'weather' && (
+            {job && (mode === 'url' || mode === 'logs') && (
                 <section className="job-info">
                     <h2>Задача</h2>
 
@@ -834,9 +877,7 @@ function HomePage() {
 
                     {jobStatus !== 'Completed' &&
                         jobStatus !== 'Failed' && (
-                            <p>
-                                Задача обрабатывается в фоне...
-                            </p>
+                            <p>Задача обрабатывается в фоне...</p>
                         )}
 
                     {jobStatus === 'Failed' && (
@@ -845,12 +886,11 @@ function HomePage() {
                         </p>
                     )}
 
-                    {jobStatus === 'Completed' &&
-                        isLogJob && (
-                            <LogAnalysisStatistics
-                                result={job.logAnalysisResult}
-                            />
-                        )}
+                    {jobStatus === 'Completed' && isLogJob && (
+                        <LogAnalysisStatistics
+                            result={job.logAnalysisResult}
+                        />
+                    )}
 
                     {jobStatus === 'Completed' &&
                         !isLogJob &&
@@ -859,14 +899,8 @@ function HomePage() {
                                 <h3>Результаты проверки URL</h3>
 
                                 {job.results.map((result) => (
-                                    <article
-                                        key={
-                                            result.id ?? result.url
-                                        }
-                                    >
-                                        <p>
-                                            URL: {result.url}
-                                        </p>
+                                    <article key={result.id ?? result.url}>
+                                        <p>URL: {result.url}</p>
 
                                         <p>
                                             HTTP-статус:{' '}

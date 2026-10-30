@@ -105,6 +105,7 @@ public class WeatherService
     }
 
     // Получение текущей погоды с использованием Redis.
+    // Получение текущей погоды для существующего отслеживания.
     public async Task<CurrentWeatherResponse> GetCurrentWeatherAsync(
         Guid trackingId,
         CancellationToken cancellationToken = default)
@@ -121,38 +122,50 @@ public class WeatherService
                 $"Отслеживание {trackingId} не найдено.");
         }
 
-        var latitude = tracking.Latitude.ToString(
+        return await GetWeatherWithCacheAsync(
+            tracking.Latitude,
+            tracking.Longitude,
+            tracking.LocationName,
+            cancellationToken);
+    }
+    // Общий механизм получения погоды через Redis.
+    private async Task<CurrentWeatherResponse> GetWeatherWithCacheAsync(
+        double latitude,
+        double longitude,
+        string locationName,
+        CancellationToken cancellationToken)
+    {
+        var latitudeString = latitude.ToString(
             CultureInfo.InvariantCulture);
 
-        var longitude = tracking.Longitude.ToString(
+        var longitudeString = longitude.ToString(
             CultureInfo.InvariantCulture);
 
-        // Формируем ключ Redis по координатам города.
-        var cacheKey = $"weather:current:{latitude}:{longitude}";
+        // Формируем единый ключ Redis для обоих сценариев.
+        var cacheKey = $"weather:current:{latitudeString}:{longitudeString}";
 
         // Проверяем наличие данных в Redis.
         var cachedWeather = await _redisCache.GetAsync<CurrentWeatherResponse>(
             cacheKey,
             cancellationToken);
 
-        // Если данные найдены, возвращаем их.
         if (cachedWeather is not null)
         {
             _logger.LogInformation(
                 "Cache HIT для города {LocationName}.",
-                tracking.LocationName);
+                locationName);
 
             return cachedWeather;
         }
 
-        // Если данных нет, обращаемся к Open-Meteo.
         _logger.LogInformation(
-            "Cache MISS. Получаем текущую погоду для {LocationName}.",
-            tracking.LocationName);
+            "Cache MISS для города {LocationName}.",
+            locationName);
 
+        // Если данных нет, получаем их из Open-Meteo.
         var current = await FetchCurrentWeatherAsync(
-            tracking.Latitude,
-            tracking.Longitude,
+            latitude,
+            longitude,
             cancellationToken);
 
         var result = new CurrentWeatherResponse
@@ -172,7 +185,6 @@ public class WeatherService
 
         return result;
     }
-
     // Получение всех отслеживаний.
     public async Task<List<WeatherTrackingResponse>> GetTrackingsAsync(
         CancellationToken cancellationToken = default)
@@ -306,7 +318,61 @@ public class WeatherService
             tracking.LocationName,
             record.TemperatureCelsius);
     }
+    // Разовая проверка погоды по названию города.
+    public async Task<WeatherCheckResponse> CheckWeatherAsync(
+        string locationName,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(locationName))
+        {
+            throw new ArgumentException("Укажи название города.");
+        }
 
+        var cityName = locationName.Trim();
+
+        var httpClient = _httpClientFactory.CreateClient();
+
+        // Получаем координаты города через геокодирование.
+        var geocodingUrl =
+            "https://geocoding-api.open-meteo.com/v1/search" +
+            $"?name={Uri.EscapeDataString(cityName)}" +
+            "&count=1&language=en&format=json";
+
+        using var response = await httpClient.GetAsync(
+            geocodingUrl,
+            cancellationToken);
+
+        response.EnsureSuccessStatusCode();
+
+        var geocoding = await response.Content
+            .ReadFromJsonAsync<GeocodingResponse>(
+                cancellationToken);
+
+        var location = geocoding?.Results?.FirstOrDefault();
+
+        if (location is null)
+        {
+            throw new ArgumentException(
+                $"Не удалось найти город «{cityName}».");
+        }
+
+        // Получаем погоду через общий механизм кэширования.
+        var weather = await GetWeatherWithCacheAsync(
+            location.Latitude,
+            location.Longitude,
+            location.Name,
+            cancellationToken);
+
+        return new WeatherCheckResponse
+        {
+            LocationName = location.Name,
+            TemperatureCelsius = weather.TemperatureCelsius,
+            RelativeHumidityPercent = weather.RelativeHumidityPercent,
+            PrecipitationMm = weather.PrecipitationMm,
+            WindSpeedKmh = weather.WindSpeedKmh,
+            RetrievedAt = weather.RetrievedAt
+        };
+    }
     // Общий метод получения текущей погоды из Open-Meteo.
     private async Task<CurrentWeather> FetchCurrentWeatherAsync(
         double latitude,

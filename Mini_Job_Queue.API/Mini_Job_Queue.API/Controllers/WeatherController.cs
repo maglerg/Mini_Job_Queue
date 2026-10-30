@@ -103,6 +103,37 @@ public class WeatherController : ControllerBase
                 new { message = "Не удалось получить данные Open-Meteo." });
         }
     }
+    // Разовая проверка погоды без создания отслеживания.
+    [HttpPost("check")]
+    public async Task<ActionResult<WeatherCheckResponse>> CheckWeather(
+        [FromBody] WeatherCheckRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var weather = await _weatherService.CheckWeatherAsync(
+                request.LocationName,
+                cancellationToken);
+
+            return Ok(weather);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (HttpRequestException)
+        {
+            return StatusCode(
+                StatusCodes.Status502BadGateway,
+                new { message = "Не удалось получить данные Open-Meteo." });
+        }
+        catch (InvalidOperationException)
+        {
+            return StatusCode(
+                StatusCodes.Status502BadGateway,
+                new { message = "Open-Meteo не вернул погодные данные." });
+        }
+    }
     // Получить историю замеров конкретного города.
     [HttpGet("trackings/{id:guid}/history")]
     public async Task<ActionResult<List<WeatherRecordResponse>>>
