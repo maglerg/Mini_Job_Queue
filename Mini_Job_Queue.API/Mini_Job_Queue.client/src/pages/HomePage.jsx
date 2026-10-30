@@ -510,7 +510,7 @@ function HomePage() {
                     className={mode === 'automation' ? 'active' : ''}
                     onClick={() => changeMode('automation')}
                 >
-                    Автоматизация
+                    Автоматизация URL
                 </button>
 
                 <button
@@ -518,7 +518,7 @@ function HomePage() {
                     className={mode === 'weather-check' ? 'active' : ''}
                     onClick={() => changeMode('weather-check')}
                 >
-                    Проверка погоды
+                    Погода
                 </button>
 
                 <button
@@ -526,7 +526,7 @@ function HomePage() {
                     className={mode === 'weather' ? 'active' : ''}
                     onClick={() => changeMode('weather')}
                 >
-                    Погода
+                    Автоматизация погоды
                 </button>
             </nav>
 
