@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Mini_Job_Queue.API.Context;
 using Mini_Job_Queue.API.DTOs.Weather;
 using Mini_Job_Queue.API.Models;
+using Mini_Job_Queue.API.Services.Caching;
 
 namespace Mini_Job_Queue.API.Services;
 
@@ -16,17 +17,20 @@ public class WeatherService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<WeatherService> _logger;
     private readonly AutomationScheduleNotifier _scheduleNotifier;
+    private readonly IRedisCacheService _redisCache;
 
     public WeatherService(
-    AppDbContext dbContext,
-    IHttpClientFactory httpClientFactory,
-    ILogger<WeatherService> logger,
-    AutomationScheduleNotifier scheduleNotifier)
+        AppDbContext dbContext,
+        IHttpClientFactory httpClientFactory,
+        ILogger<WeatherService> logger,
+        AutomationScheduleNotifier scheduleNotifier,
+        IRedisCacheService redisCache)
     {
         _dbContext = dbContext;
         _httpClientFactory = httpClientFactory;
         _logger = logger;
         _scheduleNotifier = scheduleNotifier;
+        _redisCache = redisCache;
     }
 
     // Создание отслеживания погоды.
@@ -100,6 +104,75 @@ public class WeatherService
         return MapTracking(tracking);
     }
 
+    // Получение текущей погоды с использованием Redis.
+    public async Task<CurrentWeatherResponse> GetCurrentWeatherAsync(
+        Guid trackingId,
+        CancellationToken cancellationToken = default)
+    {
+        var tracking = await _dbContext.WeatherTrackings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                item => item.Id == trackingId,
+                cancellationToken);
+
+        if (tracking is null)
+        {
+            throw new KeyNotFoundException(
+                $"Отслеживание {trackingId} не найдено.");
+        }
+
+        var latitude = tracking.Latitude.ToString(
+            CultureInfo.InvariantCulture);
+
+        var longitude = tracking.Longitude.ToString(
+            CultureInfo.InvariantCulture);
+
+        // Формируем ключ Redis по координатам города.
+        var cacheKey = $"weather:current:{latitude}:{longitude}";
+
+        // Проверяем наличие данных в Redis.
+        var cachedWeather = await _redisCache.GetAsync<CurrentWeatherResponse>(
+            cacheKey,
+            cancellationToken);
+
+        // Если данные найдены, возвращаем их.
+        if (cachedWeather is not null)
+        {
+            _logger.LogInformation(
+                "Cache HIT для города {LocationName}.",
+                tracking.LocationName);
+
+            return cachedWeather;
+        }
+
+        // Если данных нет, обращаемся к Open-Meteo.
+        _logger.LogInformation(
+            "Cache MISS. Получаем текущую погоду для {LocationName}.",
+            tracking.LocationName);
+
+        var current = await FetchCurrentWeatherAsync(
+            tracking.Latitude,
+            tracking.Longitude,
+            cancellationToken);
+
+        var result = new CurrentWeatherResponse
+        {
+            TemperatureCelsius = current.TemperatureCelsius,
+            RelativeHumidityPercent = current.RelativeHumidityPercent,
+            PrecipitationMm = current.PrecipitationMm,
+            WindSpeedKmh = current.WindSpeedKmh,
+            RetrievedAt = DateTime.UtcNow
+        };
+
+        // Сохраняем результат в Redis на 3 минуты.
+        await _redisCache.SetAsync(
+            cacheKey,
+            result,
+            cancellationToken);
+
+        return result;
+    }
+
     // Получение всех отслеживаний.
     public async Task<List<WeatherTrackingResponse>> GetTrackingsAsync(
         CancellationToken cancellationToken = default)
@@ -143,7 +216,7 @@ public class WeatherService
         return true;
     }
 
-    // Получение истории измерений.
+    // Получение истории измерений из PostgreSQL.
     public async Task<List<WeatherRecordResponse>> GetHistoryAsync(
         Guid trackingId,
         CancellationToken cancellationToken = default)
@@ -178,7 +251,7 @@ public class WeatherService
         }).ToList();
     }
 
-    // Выполнение одной задачи сбора погоды из JobWorker.
+    // Выполнение автоматической задачи сбора погоды из JobWorker.
     public async Task CollectWeatherAsync(
         Guid trackingId,
         CancellationToken cancellationToken)
@@ -203,16 +276,53 @@ public class WeatherService
             return;
         }
 
-        var latitude = tracking.Latitude.ToString(
+        // Получаем свежие данные непосредственно из Open-Meteo.
+        // Здесь Redis не используется, чтобы не дублировать
+        // старые данные в истории измерений.
+        var current = await FetchCurrentWeatherAsync(
+            tracking.Latitude,
+            tracking.Longitude,
+            cancellationToken);
+
+        var record = new WeatherRecord
+        {
+            Id = Guid.NewGuid(),
+            WeatherTrackingId = tracking.Id,
+            TemperatureCelsius = current.TemperatureCelsius,
+            RelativeHumidityPercent =
+                current.RelativeHumidityPercent,
+            PrecipitationMm = current.PrecipitationMm,
+            WindSpeedKmh = current.WindSpeedKmh,
+            RecordedAt = DateTime.UtcNow
+        };
+
+        _dbContext.WeatherRecords.Add(record);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Погода сохранена для {LocationName}. " +
+            "Температура: {Temperature} °C.",
+            tracking.LocationName,
+            record.TemperatureCelsius);
+    }
+
+    // Общий метод получения текущей погоды из Open-Meteo.
+    private async Task<CurrentWeather> FetchCurrentWeatherAsync(
+        double latitude,
+        double longitude,
+        CancellationToken cancellationToken)
+    {
+        var latitudeString = latitude.ToString(
             CultureInfo.InvariantCulture);
 
-        var longitude = tracking.Longitude.ToString(
+        var longitudeString = longitude.ToString(
             CultureInfo.InvariantCulture);
 
         var weatherUrl =
             "https://api.open-meteo.com/v1/forecast" +
-            $"?latitude={latitude}" +
-            $"&longitude={longitude}" +
+            $"?latitude={latitudeString}" +
+            $"&longitude={longitudeString}" +
             "&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m";
 
         var httpClient = _httpClientFactory.CreateClient();
@@ -238,29 +348,7 @@ public class WeatherService
                 "Open-Meteo не вернул текущие погодные данные.");
         }
 
-        var current = weather.Current;
-
-        var record = new WeatherRecord
-        {
-            Id = Guid.NewGuid(),
-            WeatherTrackingId = tracking.Id,
-            TemperatureCelsius = current.TemperatureCelsius,
-            RelativeHumidityPercent =
-                current.RelativeHumidityPercent,
-            PrecipitationMm = current.PrecipitationMm,
-            WindSpeedKmh = current.WindSpeedKmh,
-            RecordedAt = DateTime.UtcNow
-        };
-
-        _dbContext.WeatherRecords.Add(record);
-
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        _logger.LogInformation(
-            "Погода сохранена для {LocationName}. " +
-            "Температура: {Temperature} °C.",
-            tracking.LocationName,
-            record.TemperatureCelsius);
+        return weather.Current;
     }
 
     // Преобразование модели отслеживания в DTO.
@@ -279,7 +367,7 @@ public class WeatherService
         };
     }
 
-    // DTO для ответа геокодирования Open-Meteo.
+    // DTO ответа геокодирования Open-Meteo.
     private sealed class GeocodingResponse
     {
         [JsonPropertyName("results")]
@@ -298,7 +386,7 @@ public class WeatherService
         public double Longitude { get; set; }
     }
 
-    // DTO для ответа с текущей погодой.
+    // DTO ответа Open-Meteo с текущей погодой.
     private sealed class OpenMeteoResponse
     {
         [JsonPropertyName("current")]

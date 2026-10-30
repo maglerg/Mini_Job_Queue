@@ -77,7 +77,32 @@ public class WeatherController : ControllerBase
 
         return NoContent();
     }
+    // Получить текущую погоду с использованием Redis.
+    [HttpGet("trackings/{id:guid}/current")]
+    public async Task<ActionResult<CurrentWeatherResponse>>
+        GetCurrentWeather(
+            Guid id,
+            CancellationToken cancellationToken)
+    {
+        try
+        {
+            var weather = await _weatherService.GetCurrentWeatherAsync(
+                id,
+                cancellationToken);
 
+            return Ok(weather);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (HttpRequestException)
+        {
+            return StatusCode(
+                StatusCodes.Status502BadGateway,
+                new { message = "Не удалось получить данные Open-Meteo." });
+        }
+    }
     // Получить историю замеров конкретного города.
     [HttpGet("trackings/{id:guid}/history")]
     public async Task<ActionResult<List<WeatherRecordResponse>>>

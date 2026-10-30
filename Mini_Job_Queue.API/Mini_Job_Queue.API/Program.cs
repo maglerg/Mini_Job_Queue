@@ -5,6 +5,8 @@ using Mini_Job_Queue.API.Services;
 using Mini_Job_Queue.API.Services.LogAnalysis;
 using Mini_Job_Queue.API.Workers;
 using Serilog;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
+using Mini_Job_Queue.API.Services.Caching;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
     ));
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration =
+        builder.Configuration["Redis:ConnectionString"];
+
+    options.InstanceName = "MiniJobQueue:";
+});
 
 builder.Services.AddSingleton<IJobQueue, JobQueue>();
 
@@ -59,6 +69,7 @@ builder.Services.AddHostedService<PostgresScheduleNotificationListener>();
 builder.Services.AddHostedService<AutomationScheduler>();
 builder.Services.AddScoped<AutomationRulesService>();
 builder.Services.AddScoped<WeatherService>();
+builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
 
 
 // Swagger
