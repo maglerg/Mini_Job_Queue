@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/Solution Items/">
+    <File Path="compose.yaml" />
     <File Path="problems.txt" />
   </Folder>
   <Project Path="Mini_Job_Queue.API/Mini_Job_Queue.API.csproj" />

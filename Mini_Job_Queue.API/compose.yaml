@@ -1,0 +1,55 @@
+services:
+
+  database:
+    image: postgres:18
+    container_name: mini-job-queue-db
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - app_network
+
+
+  server:
+    build:
+      context: ./Mini_Job_Queue.API
+      dockerfile: Dockerfile
+
+    container_name: mini-job-queue-api
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=database;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Gss Encryption Mode=Disable"
+
+    ports:
+      - "127.0.0.1:5205:8080"
+
+    depends_on:
+      database:
+        condition: service_healthy
+
+    networks:
+      - app_network
+
+
+volumes:
+  postgres_data:
+
+
+networks:
+  app_network:
+    driver: bridge
