@@ -32,6 +32,12 @@ RabbitMQ — обмен сообщениями между независимым
 Сети и развёртывание — порты, DNS, переменные окружения, volumes, reverse proxy.
 Kubernetes — кластеры, Pod, Deployment, Service, масштабирование.
 
-
+Тема	Что изучить
+Docker Hub / Registry	Хранение и публикация образов
+Docker Networks	Bridge, пользовательские сети, изоляция
+Volumes	Резервное копирование и восстановление БД
+Docker Security	Пользователи контейнеров, секреты, права доступа
+Логи и мониторинг	Просмотр логов, диагностика контейнеров
+Production Compose	Переменные окружения, restart policies, healthcheck
 
 Ansible в автоматизации

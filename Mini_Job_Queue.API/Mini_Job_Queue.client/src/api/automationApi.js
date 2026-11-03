@@ -1,5 +1,5 @@
 
-const API_URL = 'https://localhost:7205/api/automation-rules';
+const API_URL = import.meta.env.VITE_API_BASE_URL + '/automation-rules';
 
 async function readResponse(response, fallbackMessage) {
     const data = await response.json().catch(() => null);

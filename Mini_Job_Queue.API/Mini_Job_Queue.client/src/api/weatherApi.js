@@ -1,5 +1,5 @@
 
-const API_URL = 'https://localhost:7205/api/weather';
+const API_URL = import.meta.env.VITE_API_BASE_URL + '/weather';
 
 async function readResponse(response, fallbackMessage) {
     if (response.status === 204) {
